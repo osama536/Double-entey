@@ -1,6 +1,7 @@
 # Journal Entry Card Game
 
-Played in chat with Claude. Revise with `ENTRIES.md` first.
+Open `game.html` in any browser to play. You can also play in chat with Claude.
+Revise with `ENTRIES.md` first.
 
 ## How to play
 
