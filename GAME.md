@@ -10,7 +10,9 @@ Revise with `ENTRIES.md` first.
 3. Reply with the letter only (e.g. `B`).
 4. Claude replies ✅ or ❌ and, if wrong, explains the correct entry and *why*.
 5. Scoring: ✅ = 10 points. 100 is a perfect round.
-6. At the end Claude shows:
+6. At the end the game shows the result, with **Replay these 10 cards** or **New round**.
+   The ↺ Replay round button at the top restarts the current round any time.
+7. In chat, Claude shows:
    - final score and grade
    - the **2–3 areas where you went wrong**, with the rule to remember
    - then a **new shuffled round** starts (type `stop` to end).
@@ -37,6 +39,7 @@ Revise with `ENTRIES.md` first.
 | Monthly expenses | salary (WPS), marketing, office supplies, utilities, bank charges |
 
 Mistakes are tracked by topic, so the end-of-round review points to the
-exact entries to revise. Every card uses the same wording and amounts as `ENTRIES.md`, so she
+exact entries to revise. Every card uses 100 / 5 VAT / 105 total (only prepayments use real figures),
+the same as `ENTRIES.md`, so she
 repeats the same entries until they stick. Rounds after the first give extra cards from the
 topics you got wrong.

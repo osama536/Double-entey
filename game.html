@@ -51,6 +51,9 @@
   }
   .chip b { color: var(--felt-ink); font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
   .chip.gold b { color: var(--brass); }
+  .chip.restart { appearance: none; background: transparent; font: inherit; font-size: 13px; color: var(--felt-ink); cursor: pointer; }
+  .chip.restart:hover { border-color: var(--brass); color: var(--brass); }
+  .chip.restart:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
 
   .pips { display: flex; gap: 6px; }
   .pip { width: 100%; height: 6px; border-radius: 3px; background: rgba(232, 239, 233, .16); }
@@ -182,6 +185,7 @@
       <span class="chip gold">Score <b id="st-score">0</b></span>
       <span class="chip">Streak <b id="st-streak">0</b></span>
       <span class="chip">Best <b id="st-best">–</b></span>
+      <button type="button" class="chip restart" id="restart">↺ Replay round</button>
     </div>
   </header>
   <div class="pips" id="pips" aria-hidden="true"></div>
@@ -226,7 +230,7 @@
     C: { name: "Advances", refs: "Entries 7–10", rule: "Advance from customer = liability (we owe the work); when the work is done, debit the advance and credit Sales + VAT Output. Advance to supplier = asset; when goods arrive, debit Purchases + VAT Input and credit the advance. Bank is never touched again." },
     D: { name: "Accruals", refs: "Entries 11–14", rule: "Accrued expense: Dr Expense / Cr Accrued Expenses (no VAT, no invoice yet). When the invoice comes, debit Accrued Expenses, not the expense again. Accrued income: Dr Accrued Income / Cr Income; when we invoice, credit Accrued Income, not income again." },
     E: { name: "Prepayments", refs: "Entries 15–18", rule: "Paying in advance creates an asset (Prepaid Rent, Insurance, Visa). Each month move one month's share: Dr Expense / Cr Prepaid. Divide by the number of months covered (12 for a year, 24 for a 2-year visa)." },
-    F: { name: "Fixed assets", refs: "Entries 19–20", rule: "Buying equipment or furniture: Dr Fixed Asset / Dr VAT Input / Cr Bank. Monthly depreciation = cost ÷ useful life in months: Dr Depreciation Expense / Cr Accumulated Depreciation." },
+    F: { name: "Fixed assets", refs: "Entries 19–20", rule: "Buying equipment or furniture: Dr Fixed Asset / Dr VAT Input / Cr Bank. Monthly depreciation: Dr Depreciation Expense / Cr Accumulated Depreciation. Never credit the asset itself." },
     G: { name: "Monthly expenses", refs: "Entries 21–25", rule: "Expense with VAT: Dr Expense / Dr VAT Input / Cr Bank or Cash. Salary has no VAT: accrue with Dr Salary Expense / Cr Salary Payable, then pay with Dr Salary Payable / Cr Bank." }
   };
 
@@ -235,7 +239,7 @@
   var DECK = [
     // A. Sales cycle
     { id: "A1", g: "A", ref: 1, title: "Credit sale with VAT Output", make: function () {
-      var a = 30000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "Sold goods <b>on credit</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Customer (AR)", a + v), L("Sales", 0, a), L("VAT Output", 0, v)],
         wrong: [
@@ -246,7 +250,7 @@
         explain: "The customer owes the full invoice (" + fmt(a + v) + "), so debit Customer. Credit Sales for " + fmt(a) + " and VAT Output for " + fmt(v) + "." };
     } },
     { id: "A3", g: "A", ref: 2, title: "Sales return", make: function () {
-      var r = 2000, v = vat(r);
+      var r = 100, v = vat(r);
       return { text: "Customer <b>returned goods</b> worth " + AED(r) + " + 5% VAT.",
         correct: [L("Sales Returns", r), L("VAT Output", v), L("Customer (AR)", 0, r + v)],
         wrong: [
@@ -257,8 +261,8 @@
         explain: "A return undoes the sale: debit Sales Returns and VAT Output, credit Customer." };
     } },
     { id: "A4", g: "A", ref: 3, title: "Customer pays", make: function () {
-      var a = 29400;
-      return { text: "Customer <b>pays</b> the balance of " + AED(a) + " into our bank.",
+      var a = 105;
+      return { text: "Customer <b>pays</b> " + AED(a) + " into our bank.",
         correct: [L("Bank", a), L("Customer (AR)", 0, a)],
         wrong: [
           { lines: [L("Customer (AR)", a), L("Bank", 0, a)], why: "Money is coming in, so Bank is debited. This entry shows money going out." },
@@ -270,7 +274,7 @@
 
     // B. Purchase cycle
     { id: "B1", g: "B", ref: 4, title: "Credit purchase with VAT Input", make: function () {
-      var a = 8000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "Bought goods <b>on credit</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Purchases", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)],
         wrong: [
@@ -281,7 +285,7 @@
         explain: "Debit Purchases and VAT Input. We owe the supplier the full " + fmt(a + v) + ", so credit Supplier." };
     } },
     { id: "B3", g: "B", ref: 5, title: "Purchase return", make: function () {
-      var r = 1000, v = vat(r);
+      var r = 100, v = vat(r);
       return { text: "We <b>returned goods</b> to the supplier worth " + AED(r) + " + 5% VAT.",
         correct: [L("Supplier (AP)", r + v), L("Purchase Returns", 0, r), L("VAT Input", 0, v)],
         wrong: [
@@ -292,8 +296,8 @@
         explain: "A return undoes the purchase: debit Supplier, credit Purchase Returns and VAT Input." };
     } },
     { id: "B4", g: "B", ref: 6, title: "We pay the supplier", make: function () {
-      var a = 7350;
-      return { text: "We <b>pay the supplier</b> the balance of " + AED(a) + " by bank.",
+      var a = 105;
+      return { text: "We <b>pay the supplier</b> " + AED(a) + " by bank.",
         correct: [L("Supplier (AP)", a), L("Bank", 0, a)],
         wrong: [
           { lines: [L("Bank", a), L("Supplier (AP)", 0, a)], why: "Money is going out, so Bank is credited. Paying reduces what we owe, so Supplier is debited." },
@@ -305,7 +309,7 @@
 
     // C. Advances
     { id: "C1", g: "C", ref: 7, title: "Customer pays an advance", make: function () {
-      var a = 10000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "Customer pays us " + AED(a + v) + " <b>in advance</b>. Work not done yet.",
         correct: [L("Bank", a + v), L("Advance from Customer", 0, a + v)],
         wrong: [
@@ -316,7 +320,7 @@
         explain: "Their money is with us and we owe them the work, so it is a liability: Dr Bank / Cr Advance from Customer." };
     } },
     { id: "C2", g: "C", ref: 8, title: "Work done: advance becomes a sale", make: function () {
-      var a = 10000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "Customer paid " + AED(a + v) + " in advance. Now the <b>work is done</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Advance from Customer", a + v), L("Sales", 0, a), L("VAT Output", 0, v)],
         wrong: [
@@ -327,7 +331,7 @@
         explain: "The liability is settled by doing the work: debit Advance from Customer and credit Sales + VAT Output." };
     } },
     { id: "C4", g: "C", ref: 9, title: "We pay a supplier advance", make: function () {
-      var a = 5000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "We pay the supplier " + AED(a + v) + " <b>in advance</b>. Goods not received yet.",
         correct: [L("Advance to Supplier", a + v), L("Bank", 0, a + v)],
         wrong: [
@@ -338,7 +342,7 @@
         explain: "Our money is sitting with the supplier, so it is an asset: Dr Advance to Supplier / Cr Bank." };
     } },
     { id: "C5", g: "C", ref: 10, title: "Goods received: advance becomes a purchase", make: function () {
-      var a = 5000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "We paid the supplier " + AED(a + v) + " in advance. Now the <b>goods are received</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Purchases", a), L("VAT Input", v), L("Advance to Supplier", 0, a + v)],
         wrong: [
@@ -351,9 +355,9 @@
 
     // D. Accruals
     { id: "D1", g: "D", ref: 11, title: "Accrued expense", make: function () {
-      var a = 2000;
+      var a = 100;
       var acct = "Electricity Expense";
-      return { text: "Month end. Electricity used this month is about " + AED(a) + ". <b>No bill yet.</b>",
+      return { text: "Month end. Electricity used this month is " + AED(a) + ". <b>No bill yet.</b>",
         correct: [L(acct, a), L("Accrued Expenses", 0, a)],
         wrong: [
           { lines: [L(acct, a), L("VAT Input", vat(a)), L("Accrued Expenses", 0, a + vat(a))], why: "No tax invoice yet, so no VAT Input can be booked. Accrue the expense only." },
@@ -363,18 +367,18 @@
         explain: "Book the cost in the month it was used, even without a bill: Dr Expense / Cr Accrued Expenses." };
     } },
     { id: "D2", g: "D", ref: 12, title: "Reverse accrued expense when invoice arrives", make: function () {
-      var a = 2000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "We accrued " + AED(a) + " electricity last month. Now the <b>invoice arrives</b>: " + AED(a) + " + 5% VAT, not paid yet.",
         correct: [L("Accrued Expenses", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)],
         wrong: [
-          { lines: [L("Electricity Expense", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)], why: "The expense was already booked in March. Debiting it again counts it twice. Debit Accrued Expenses to reverse the accrual." },
+          { lines: [L("Electricity Expense", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)], why: "The expense was already booked last month. Debiting it again counts it twice. Debit Accrued Expenses to reverse the accrual." },
           { lines: [L("Accrued Expenses", a), L("VAT Input", v), L("Bank", 0, a + v)], why: "The invoice is payable next month, so we owe the supplier. Credit Supplier, not Bank." },
           { lines: [L("Accrued Expenses", a + v), L("Supplier (AP)", 0, a + v)], why: "Only " + fmt(a) + " was accrued. The " + fmt(v) + " is VAT Input from the tax invoice." }
         ],
         explain: "The invoice replaces the estimate: debit Accrued Expenses (clears it) and VAT Input, credit Supplier." };
     } },
     { id: "D3", g: "D", ref: 13, title: "Accrued income", make: function () {
-      var a = 6000;
+      var a = 100;
       return { text: "Month end. Consulting work of " + AED(a) + " is done. <b>No invoice issued yet.</b>",
         correct: [L("Accrued Income", a), L("Service Income", 0, a)],
         wrong: [
@@ -385,11 +389,11 @@
         explain: "Book income in the month it was earned: Dr Accrued Income (asset) / Cr Service Income." };
     } },
     { id: "D4", g: "D", ref: 14, title: "Reverse accrued income when we invoice", make: function () {
-      var a = 6000, v = vat(a);
+      var a = 100, v = vat(a);
       return { text: "We accrued " + AED(a) + " income last month. Now we <b>issue the invoice</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Customer (AR)", a + v), L("Accrued Income", 0, a), L("VAT Output", 0, v)],
         wrong: [
-          { lines: [L("Customer (AR)", a + v), L("Service Income", 0, a), L("VAT Output", 0, v)], why: "The income was already booked in March. Crediting it again counts it twice. Credit Accrued Income." },
+          { lines: [L("Customer (AR)", a + v), L("Service Income", 0, a), L("VAT Output", 0, v)], why: "The income was already booked last month. Crediting it again counts it twice. Credit Accrued Income." },
           { lines: [L("Customer (AR)", a), L("Accrued Income", 0, a)], why: "The tax invoice adds " + fmt(v) + " VAT Output, which the customer also owes." },
           { lines: [L("Accrued Income", a), L("VAT Output", v), L("Customer (AR)", 0, a + v)], why: "This runs backwards. The customer now owes us, so Customer is debited." }
         ],
@@ -466,7 +470,7 @@
 
     // F. Fixed assets
     { id: "F1", g: "F", ref: 19, title: "Buy a fixed asset", make: function () {
-      var a = 36000, v = vat(a);
+      var a = 100, v = vat(a);
       var acct = "Furniture (Fixed Asset)";
       return { text: "Bought office furniture: " + AED(a) + " + 5% VAT, paid by bank.",
         correct: [L(acct, a), L("VAT Input", v), L("Bank", 0, a + v)],
@@ -478,54 +482,54 @@
         explain: "Long-life items are capitalised: Dr Fixed Asset + VAT Input / Cr Bank." };
     } },
     { id: "F2", g: "F", ref: 20, title: "Depreciation (monthly)", make: function () {
-      var cost = 36000, y = 3, m = cost / (y * 12);
-      return { text: "Furniture cost " + AED(cost) + ", life <b>3 years</b>. <b>Monthly</b> depreciation entry?",
+      var m = 100;
+      return { text: "Monthly depreciation on office furniture is " + AED(m) + ".",
         correct: [L("Depreciation Expense", m), L("Accumulated Depreciation", 0, m)],
         wrong: [
           { lines: [L("Depreciation Expense", m), L("Furniture (Fixed Asset)", 0, m)], why: "Never credit the asset directly. Credit Accumulated Depreciation so the original cost stays visible." },
           { lines: [L("Accumulated Depreciation", m), L("Depreciation Expense", 0, m)], why: "This runs backwards. The expense is debited and Accumulated Depreciation is credited." },
-          { lines: [L("Depreciation Expense", cost / y), L("Accumulated Depreciation", 0, cost / y)], why: fmt(cost / y) + " is the yearly amount. Monthly is " + fmt(cost) + " ÷ " + (y * 12) + " months = " + fmt(m) + "." }
+          { lines: [L("Depreciation Expense", m), L("Bank", 0, m)], why: "Depreciation is not a payment. No money leaves the bank, so credit Accumulated Depreciation." }
         ],
-        explain: fmt(cost) + " ÷ (" + y + " × 12) = " + fmt(m) + " a month: Dr Depreciation Expense / Cr Accumulated Depreciation." };
+        explain: "Dr Depreciation Expense / Cr Accumulated Depreciation. No cash moves." };
     } },
 
     // G. Monthly expenses
     { id: "G1", g: "G", ref: 21, title: "Salary at month end", make: function () {
-      var a = 25000;
+      var a = 100;
       return { text: "Month end. Salaries of " + AED(a) + " are due, <b>not paid yet</b>.",
         correct: [L("Salary Expense", a), L("Salary Payable", 0, a)],
         wrong: [
           { lines: [L("Salary Expense", a), L("VAT Input", vat(a)), L("Salary Payable", 0, a + vat(a))], why: "Salaries have no VAT." },
-          { lines: [L("Salary Expense", a), L("Bank", 0, a)], why: "Nothing has been paid yet on 31 March. Credit Salary Payable." },
+          { lines: [L("Salary Expense", a), L("Bank", 0, a)], why: "Nothing has been paid yet. Credit Salary Payable." },
           { lines: [L("Salary Payable", a), L("Salary Expense", 0, a)], why: "This runs backwards. Expense up (Dr), liability up (Cr)." }
         ],
-        explain: "Book the cost in March and show what we owe staff: Dr Salary Expense / Cr Salary Payable." };
+        explain: "Book the cost this month and show what we owe staff: Dr Salary Expense / Cr Salary Payable." };
     } },
     { id: "G2", g: "G", ref: 21, title: "Pay salary through WPS", make: function () {
-      var a = 25000;
+      var a = 100;
       return { text: "We <b>pay</b> the salaries of " + AED(a) + " through WPS.",
         correct: [L("Salary Payable", a), L("Bank", 0, a)],
         wrong: [
-          { lines: [L("Salary Expense", a), L("Bank", 0, a)], why: "The expense was booked on 31 March. Debiting it again counts it twice. Clear Salary Payable." },
+          { lines: [L("Salary Expense", a), L("Bank", 0, a)], why: "The expense was booked at month end. Debiting it again counts it twice. Clear Salary Payable." },
           { lines: [L("Bank", a), L("Salary Payable", 0, a)], why: "Money went out, so Bank is credited." },
           { lines: [L("Salary Payable", a), L("Salary Expense", 0, a)], why: "This cancels the expense. Payment clears the liability against Bank." }
         ],
         explain: "Paying clears the liability: Dr Salary Payable / Cr Bank." };
     } },
     { id: "G3", g: "G", ref: 22, title: "Marketing expense", make: function () {
-      var a = 4000, v = vat(a);
+      var a = 100, v = vat(a);
       return expenseCard("Paid for marketing: " + AED(a) + " + 5% VAT, <b>by bank</b>.", "Marketing Expense", a, v, "Bank");
     } },
     { id: "G4", g: "G", ref: 23, title: "Office supplies", make: function () {
-      var a = 500, v = vat(a);
+      var a = 100, v = vat(a);
       return expenseCard("Bought office supplies: " + AED(a) + " + 5% VAT, <b>in cash</b>.", "Office Supplies Expense", a, v, "Cash");
     } },
     { id: "G5", g: "G", ref: 24, title: "Internet and phone bill", make: function () {
-      var a = 800, v = vat(a);
+      var a = 100, v = vat(a);
       return expenseCard("Internet and phone bill: " + AED(a) + " + 5% VAT, <b>by bank</b>.", "Telephone & Internet Expense", a, v, "Bank");
     } },
     { id: "G6", g: "G", ref: 25, title: "Bank charges", make: function () {
-      var a = 150;
+      var a = 100;
       return { text: "Bank <b>deducted " + AED(a) + "</b> charges.",
         correct: [L("Bank Charges Expense", a), L("Bank", 0, a)],
         wrong: [
@@ -589,6 +593,17 @@
       cards: buildRound(weak),
       idx: 0, score: 0, streak: 0, choice: null,
       log: [], weak: [], done: false
+    };
+    render();
+  }
+
+  // Same cards again, answers reshuffled, score reset.
+  function replay(prev) {
+    S = {
+      round: prev.round,
+      cards: prev.cards.map(function (c) { var n = Object.assign({}, c); n.options = shuffle(c.options); return n; }),
+      idx: 0, score: 0, streak: 0, choice: null,
+      log: [], weak: prev.weak || [], done: false
     };
     render();
   }
@@ -749,11 +764,12 @@
           "<div class=\"rule\"><b>Remember</b>" + esc(GROUPS[g].rule) + "</div></div>";
       });
     }
-    html += "<div class=\"row\"><button type=\"button\" class=\"btn\" id=\"again\">Start round " + (S.round + 1) + "</button>" +
-      "<span class=\"keys\">or press <kbd>Enter</kbd></span></div></section></div>";
+    html += "<div class=\"row\"><button type=\"button\" class=\"btn\" id=\"replay\">Replay these 10 cards</button>" +
+      "<button type=\"button\" class=\"btn ghost\" id=\"again\">New round " + (S.round + 1) + "</button>" +
+      "<span class=\"keys\"><kbd>Enter</kbd> replays</span></div></section></div>";
     stage.innerHTML = html;
     window.scrollTo(0, 0);
-    var ab = document.getElementById("again");
+    var ab = document.getElementById("replay");
     if (ab) ab.focus({ preventScroll: true });
   }
 
@@ -763,11 +779,12 @@
     if (opt && !opt.disabled) return answer(parseInt(opt.getAttribute("data-i"), 10));
     if (e.target.closest("#next")) return next();
     if (e.target.closest("#again")) return newGame(S);
+    if (e.target.closest("#replay")) return replay(S);
   });
   document.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var k = e.key.toUpperCase();
-    if (S.done) { if (k === "ENTER" && document.activeElement && document.activeElement.id !== "again") { e.preventDefault(); newGame(S); } return; }
+    if (S.done) { var ae = document.activeElement && document.activeElement.id; if (k === "ENTER" && ae !== "again" && ae !== "replay") { e.preventDefault(); replay(S); } return; }
     if (S.choice === null) {
       var map = { A: 0, B: 1, C: 2, D: 3, "1": 0, "2": 1, "3": 2, "4": 3 };
       if (k in map) { e.preventDefault(); answer(map[k]); }
@@ -775,6 +792,8 @@
       e.preventDefault(); next();
     }
   });
+
+  document.getElementById("restart").addEventListener("click", function () { replay(S); });
 
   // ---------- boot (keeps the game in progress if the page is updated while open) ----------
   function start(data) {

@@ -1,6 +1,8 @@
 # Double-Entry Cheat Sheet
 
 All examples use **AED** and **5% VAT** (UAE rate).
+To keep it simple, every entry uses **100** for the amount, **5** for VAT and **105**
+for the total receivable or payable. Only the prepayments use real figures.
 Golden rule: **total Debits = total Credits** in every entry.
 
 | Account type | Increase | Decrease |
@@ -17,36 +19,36 @@ Golden rule: **total Debits = total Credits** in every entry.
 
 ## 1. Credit sale with VAT Output
 
-Sold goods on credit, AED 30,000 + 5% VAT
+Sold goods on credit: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Customer (Accounts Receivable) | 31,500 | |
-| Sales | | 30,000 |
-| VAT Output | | 1,500 |
+| Customer (Accounts Receivable) | 105 |  |
+| Sales |  | 100 |
+| VAT Output |  | 5 |
 
 Cash sale: debit **Bank** instead of Customer.
 
 ## 2. Sales return
 
-Customer returned goods worth AED 2,000 + 5% VAT
+Customer returned goods: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Sales Returns | 2,000 | |
-| VAT Output | 100 | |
-| Customer (Accounts Receivable) | | 2,100 |
+| Sales Returns | 100 |  |
+| VAT Output | 5 |  |
+| Customer (Accounts Receivable) |  | 105 |
 
 VAT Output is **reduced** (debited) because we no longer owe that VAT.
 
 ## 3. Customer pays
 
-Customer pays the balance: 31,500 − 2,100 = 29,400
+Customer pays AED 105
 
 | Account | Dr | Cr |
 |---|---|---|
-| Bank | 29,400 | |
-| Customer (Accounts Receivable) | | 29,400 |
+| Bank | 105 |  |
+| Customer (Accounts Receivable) |  | 105 |
 
 ---
 
@@ -54,36 +56,36 @@ Customer pays the balance: 31,500 − 2,100 = 29,400
 
 ## 4. Credit purchase with VAT Input
 
-Bought goods on credit, AED 8,000 + 5% VAT
+Bought goods on credit: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Purchases / Inventory | 8,000 | |
-| VAT Input | 400 | |
-| Supplier (Accounts Payable) | | 8,400 |
+| Purchases / Inventory | 100 |  |
+| VAT Input | 5 |  |
+| Supplier (Accounts Payable) |  | 105 |
 
 Cash purchase: credit **Bank** instead of Supplier.
 
 ## 5. Purchase return
 
-Returned goods worth AED 1,000 + 5% VAT to the supplier
+Returned goods to the supplier: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Supplier (Accounts Payable) | 1,050 | |
-| Purchase Returns | | 1,000 |
-| VAT Input | | 50 |
+| Supplier (Accounts Payable) | 105 |  |
+| Purchase Returns |  | 100 |
+| VAT Input |  | 5 |
 
 VAT Input is **reduced** (credited) because we can no longer claim it.
 
 ## 6. We pay the supplier
 
-Balance: 8,400 − 1,050 = 7,350
+We pay AED 105
 
 | Account | Dr | Cr |
 |---|---|---|
-| Supplier (Accounts Payable) | 7,350 | |
-| Bank | | 7,350 |
+| Supplier (Accounts Payable) | 105 |  |
+| Bank |  | 105 |
 
 ---
 
@@ -91,45 +93,41 @@ Balance: 8,400 − 1,050 = 7,350
 
 ## 7. Customer pays an advance
 
-Received AED 10,500 before doing the work. We still owe the work, so it is a **liability**.
+Received AED 105 before doing the work. We still owe the work, so it is a **liability**.
 
 | Account | Dr | Cr |
 |---|---|---|
-| Bank | 10,500 | |
-| Advance from Customer | | 10,500 |
+| Bank | 105 |  |
+| Advance from Customer |  | 105 |
 
 ## 8. Work done → reverse the customer advance into a sale
 
-Work worth AED 10,000 + 5% VAT delivered.
+Work done: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Advance from Customer | 10,500 | |
-| Sales | | 10,000 |
-| VAT Output | | 500 |
-
-If the sale is bigger than the advance, debit **Customer (AR)** for the extra amount.
+| Advance from Customer | 105 |  |
+| Sales |  | 100 |
+| VAT Output |  | 5 |
 
 ## 9. We pay an advance to a supplier
 
-Paid AED 5,250 before receiving the goods or service. Our money is with them, so it is an **asset**.
+Paid AED 105 before receiving the goods. Our money is with them, so it is an **asset**.
 
 | Account | Dr | Cr |
 |---|---|---|
-| Advance to Supplier | 5,250 | |
-| Bank | | 5,250 |
+| Advance to Supplier | 105 |  |
+| Bank |  | 105 |
 
-## 10. Goods or service received → reverse the supplier advance into a purchase
+## 10. Goods received → reverse the supplier advance into a purchase
 
-Goods worth AED 5,000 + 5% VAT received.
+Goods received: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Purchases / Expense | 5,000 | |
-| VAT Input | 250 | |
-| Advance to Supplier | | 5,250 |
-
-If the purchase is bigger than the advance, credit **Supplier (AP)** for the extra amount.
+| Purchases / Expense | 100 |  |
+| VAT Input | 5 |  |
+| Advance to Supplier |  | 105 |
 
 > Real-life UAE note: VAT is due on the date an advance is paid or received.
 > This sheet books VAT when the work is done so the double entry is easier to learn.
@@ -140,46 +138,45 @@ If the purchase is bigger than the advance, credit **Supplier (AP)** for the ext
 
 ## 11. Accrued expense (month end, used but not yet billed)
 
-Electricity used in March, estimated at AED 2,000. No bill yet.
+Electricity used this month: AED 100. No bill yet.
 
 | Account | Dr | Cr |
 |---|---|---|
-| Electricity Expense | 2,000 | |
-| Accrued Expenses | | 2,000 |
+| Electricity Expense | 100 |  |
+| Accrued Expenses |  | 100 |
 
 ## 12. Reverse the accrued expense when the invoice arrives
 
-Invoice received in April: AED 2,000 + 5% VAT
+Invoice received: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Accrued Expenses | 2,000 | |
-| VAT Input | 100 | |
-| Supplier (Accounts Payable) | | 2,100 |
+| Accrued Expenses | 100 |  |
+| VAT Input | 5 |  |
+| Supplier (Accounts Payable) |  | 105 |
 
-The expense is **not** booked again because it was already booked in March.
-If the invoice differs from the estimate, the difference goes to Electricity Expense.
+The expense is **not** booked again because it was already booked last month.
 
 ## 13. Accrued income (month end, earned but not yet invoiced)
 
-Consulting work done in March worth AED 6,000. No invoice issued yet.
+Work done this month: AED 100. No invoice issued yet.
 
 | Account | Dr | Cr |
 |---|---|---|
-| Accrued Income | 6,000 | |
-| Service Income | | 6,000 |
+| Accrued Income | 100 |  |
+| Service Income |  | 100 |
 
 ## 14. Reverse the accrued income when we issue the invoice
 
-Invoice issued in April: AED 6,000 + 5% VAT
+Invoice issued: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Customer (Accounts Receivable) | 6,300 | |
-| Accrued Income | | 6,000 |
-| VAT Output | | 300 |
+| Customer (Accounts Receivable) | 105 |  |
+| Accrued Income |  | 100 |
+| VAT Output |  | 5 |
 
-The income is **not** booked again because it was already booked in March.
+The income is **not** booked again because it was already booked last month.
 
 ---
 
@@ -245,22 +242,22 @@ Every month: 7,200 ÷ 24 = 300
 
 ## 19. Buy a fixed asset
 
-Bought office furniture: AED 36,000 + 5% VAT
+Bought office furniture: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Furniture (Fixed Asset) | 36,000 | |
-| VAT Input | 1,800 | |
-| Bank | | 37,800 |
+| Furniture (Fixed Asset) | 100 |  |
+| VAT Input | 5 |  |
+| Bank |  | 105 |
 
 ## 20. Depreciation (every month)
 
-Straight line over 3 years: 36,000 ÷ 36 = 1,000
+Monthly depreciation: AED 100
 
 | Account | Dr | Cr |
 |---|---|---|
-| Depreciation Expense | 1,000 | |
-| Accumulated Depreciation – Furniture | | 1,000 |
+| Depreciation Expense | 100 |  |
+| Accumulated Depreciation – Furniture |  | 100 |
 
 The asset account is **never** credited directly. Accumulated Depreciation reduces it on the balance sheet.
 
@@ -272,56 +269,56 @@ The asset account is **never** credited directly. Accumulated Depreciation reduc
 
 | Account | Dr | Cr |
 |---|---|---|
-| Salary Expense | 25,000 | |
-| Salary Payable | | 25,000 |
+| Salary Expense | 100 |  |
+| Salary Payable |  | 100 |
 
 Paid through WPS:
 
 | Account | Dr | Cr |
 |---|---|---|
-| Salary Payable | 25,000 | |
-| Bank | | 25,000 |
+| Salary Payable | 100 |  |
+| Bank |  | 100 |
 
 Salary has **no VAT**.
 
 ## 22. Marketing expense
 
-Paid for social media ads: AED 4,000 + 5% VAT
+Paid for marketing: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Marketing Expense | 4,000 | |
-| VAT Input | 200 | |
-| Bank | | 4,200 |
+| Marketing Expense | 100 |  |
+| VAT Input | 5 |  |
+| Bank |  | 105 |
 
 ## 23. Office supplies
 
-Bought stationery with cash: AED 500 + 5% VAT
+Bought office supplies in cash: AED 100 + 5% VAT
 
 | Account | Dr | Cr |
 |---|---|---|
-| Office Supplies Expense | 500 | |
-| VAT Input | 25 | |
-| Cash | | 525 |
+| Office Supplies Expense | 100 |  |
+| VAT Input | 5 |  |
+| Cash |  | 105 |
 
 ## 24. Utilities: internet or phone bill
 
-Monthly bill: AED 800 + 5% VAT, paid from the bank
+Monthly bill: AED 100 + 5% VAT, paid from the bank
 
 | Account | Dr | Cr |
 |---|---|---|
-| Telephone & Internet Expense | 800 | |
-| VAT Input | 40 | |
-| Bank | | 840 |
+| Telephone & Internet Expense | 100 |  |
+| VAT Input | 5 |  |
+| Bank |  | 105 |
 
 ## 25. Bank charges
 
-Bank deducted AED 150 in charges
+Bank deducted AED 100 in charges
 
 | Account | Dr | Cr |
 |---|---|---|
-| Bank Charges Expense | 150 | |
-| Bank | | 150 |
+| Bank Charges Expense | 100 |  |
+| Bank |  | 100 |
 
 ---
 
