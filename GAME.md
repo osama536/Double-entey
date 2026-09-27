@@ -23,16 +23,17 @@ Played in chat with Claude. Revise with `ENTRIES.md` first.
 | 60–70 | 👍 Getting there |
 | below 60 | 📖 Revise `ENTRIES.md` and play again |
 
-## Topics in the deck
+## Topics in the deck (25 entries in `ENTRIES.md`)
 
 | Topic | What is tested |
 |---|---|
-| Prepaid | payment, monthly expense-out |
-| Advance to Supplier | payment, goods received, adjusting the advance |
-| Advance from Customer | receipt, goods delivered, adjusting the advance |
-| Accrued Expense | month-end accrual, invoice received, payment |
-| Purchase + VAT Input | credit and cash purchases |
-| Sale + VAT Output | credit and cash sales |
+| Sales cycle | credit sale + VAT Output, sales return, customer payment |
+| Purchase cycle | credit purchase + VAT Input, purchase return, supplier payment |
+| Advances | customer advance → sale, supplier advance → purchase |
+| Accruals | accrued expense → invoice, accrued income → invoice |
+| Prepayments | rent, insurance, visa: payment and monthly amortisation |
+| Fixed assets | purchase, monthly depreciation |
+| Monthly expenses | salary (WPS), marketing, office supplies, utilities, bank charges |
 
 Mistakes are tracked by topic, so the end-of-round review points to the
 exact entries to revise. Rounds after the first give extra cards from the
