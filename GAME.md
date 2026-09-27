@@ -37,5 +37,6 @@ Revise with `ENTRIES.md` first.
 | Monthly expenses | salary (WPS), marketing, office supplies, utilities, bank charges |
 
 Mistakes are tracked by topic, so the end-of-round review points to the
-exact entries to revise. Rounds after the first give extra cards from the
+exact entries to revise. Every card uses the same wording and amounts as `ENTRIES.md`, so she
+repeats the same entries until they stick. Rounds after the first give extra cards from the
 topics you got wrong.

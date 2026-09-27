@@ -231,12 +231,12 @@
   };
 
   // ---------- the deck ----------
-  // Each card builds a fresh instance with random amounts: scenario, the correct entry, and 3 wrong entries built from common mistakes.
+  // One card per entry in ENTRIES.md, with the same fixed amounts every time: the correct entry and 3 wrong entries built from common mistakes.
   var DECK = [
     // A. Sales cycle
-    { id: "A1", g: "A", ref: 1, title: "Credit sale", make: function () {
-      var a = pick([8000, 12000, 15000, 20000, 30000]), v = vat(a);
-      return { text: "We sold goods <b>on credit</b> for " + AED(a) + " + 5% VAT.",
+    { id: "A1", g: "A", ref: 1, title: "Credit sale with VAT Output", make: function () {
+      var a = 30000, v = vat(a);
+      return { text: "Sold goods <b>on credit</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Customer (AR)", a + v), L("Sales", 0, a), L("VAT Output", 0, v)],
         wrong: [
           { lines: [L("Customer (AR)", a + v), L("Sales", 0, a), L("VAT Input", 0, v)], why: "VAT Input is for purchases. On a sale we collect VAT for the FTA, so it is VAT Output." },
@@ -245,20 +245,9 @@
         ],
         explain: "The customer owes the full invoice (" + fmt(a + v) + "), so debit Customer. Credit Sales for " + fmt(a) + " and VAT Output for " + fmt(v) + "." };
     } },
-    { id: "A2", g: "A", ref: 1, title: "Cash sale", make: function () {
-      var a = pick([2000, 4000, 6000, 10000]), v = vat(a);
-      return { text: "We sold goods for " + AED(a) + " + 5% VAT and the customer <b>paid immediately by bank transfer</b>.",
-        correct: [L("Bank", a + v), L("Sales", 0, a), L("VAT Output", 0, v)],
-        wrong: [
-          { lines: [L("Customer (AR)", a + v), L("Sales", 0, a), L("VAT Output", 0, v)], why: "The money is already in the bank, so nobody owes us. Debit Bank, not Customer." },
-          { lines: [L("Bank", a + v), L("Sales", 0, a + v)], why: "VAT is not our income. Split out " + fmt(v) + " to VAT Output." },
-          { lines: [L("Bank", a + v), L("Sales", 0, a), L("VAT Input", 0, v)], why: "VAT Input is for purchases. Sales carry VAT Output." }
-        ],
-        explain: "Cash sale: same as a credit sale, but debit Bank instead of Customer." };
-    } },
     { id: "A3", g: "A", ref: 2, title: "Sales return", make: function () {
-      var r = pick([1000, 2000, 3000, 4000]), v = vat(r);
-      return { text: "A customer <b>returned goods</b> worth " + AED(r) + " + 5% VAT that we had sold on credit.",
+      var r = 2000, v = vat(r);
+      return { text: "Customer <b>returned goods</b> worth " + AED(r) + " + 5% VAT.",
         correct: [L("Sales Returns", r), L("VAT Output", v), L("Customer (AR)", 0, r + v)],
         wrong: [
           { lines: [L("Customer (AR)", r + v), L("Sales Returns", 0, r), L("VAT Output", 0, v)], why: "This increases what the customer owes. A return reduces it, so Customer is credited." },
@@ -268,8 +257,8 @@
         explain: "A return undoes the sale: debit Sales Returns and VAT Output, credit Customer." };
     } },
     { id: "A4", g: "A", ref: 3, title: "Customer pays", make: function () {
-      var a = pick([5250, 10500, 21000, 31500]);
-      return { text: "A customer pays " + AED(a) + " into our bank for an invoice we issued last month.",
+      var a = 29400;
+      return { text: "Customer <b>pays</b> the balance of " + AED(a) + " into our bank.",
         correct: [L("Bank", a), L("Customer (AR)", 0, a)],
         wrong: [
           { lines: [L("Customer (AR)", a), L("Bank", 0, a)], why: "Money is coming in, so Bank is debited. This entry shows money going out." },
@@ -280,9 +269,9 @@
     } },
 
     // B. Purchase cycle
-    { id: "B1", g: "B", ref: 4, title: "Credit purchase", make: function () {
-      var a = pick([4000, 6000, 8000, 12000, 16000]), v = vat(a);
-      return { text: "We bought goods <b>on credit</b> from a supplier for " + AED(a) + " + 5% VAT.",
+    { id: "B1", g: "B", ref: 4, title: "Credit purchase with VAT Input", make: function () {
+      var a = 8000, v = vat(a);
+      return { text: "Bought goods <b>on credit</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Purchases", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)],
         wrong: [
           { lines: [L("Purchases", a), L("VAT Output", v), L("Supplier (AP)", 0, a + v)], why: "VAT Output is for sales. VAT we pay on purchases is VAT Input, which we claim back." },
@@ -291,20 +280,9 @@
         ],
         explain: "Debit Purchases and VAT Input. We owe the supplier the full " + fmt(a + v) + ", so credit Supplier." };
     } },
-    { id: "B2", g: "B", ref: 4, title: "Cash purchase", make: function () {
-      var a = pick([1000, 2000, 3000, 5000]), v = vat(a);
-      return { text: "We bought goods for " + AED(a) + " + 5% VAT and <b>paid by bank immediately</b>.",
-        correct: [L("Purchases", a), L("VAT Input", v), L("Bank", 0, a + v)],
-        wrong: [
-          { lines: [L("Purchases", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)], why: "We already paid, so we don't owe the supplier. Credit Bank." },
-          { lines: [L("Bank", a + v), L("Purchases", 0, a), L("VAT Input", 0, v)], why: "Money went out, so Bank is credited, not debited." },
-          { lines: [L("Purchases", a), L("VAT Output", v), L("Bank", 0, a + v)], why: "VAT on a purchase is VAT Input." }
-        ],
-        explain: "Cash purchase: same as a credit purchase, but credit Bank instead of Supplier." };
-    } },
     { id: "B3", g: "B", ref: 5, title: "Purchase return", make: function () {
-      var r = pick([500, 1000, 2000, 3000]), v = vat(r);
-      return { text: "We <b>returned goods</b> worth " + AED(r) + " + 5% VAT to a supplier we buy from on credit.",
+      var r = 1000, v = vat(r);
+      return { text: "We <b>returned goods</b> to the supplier worth " + AED(r) + " + 5% VAT.",
         correct: [L("Supplier (AP)", r + v), L("Purchase Returns", 0, r), L("VAT Input", 0, v)],
         wrong: [
           { lines: [L("Purchase Returns", r), L("VAT Input", v), L("Supplier (AP)", 0, r + v)], why: "This increases what we owe. A return reduces it, so Supplier is debited." },
@@ -314,8 +292,8 @@
         explain: "A return undoes the purchase: debit Supplier, credit Purchase Returns and VAT Input." };
     } },
     { id: "B4", g: "B", ref: 6, title: "We pay the supplier", make: function () {
-      var a = pick([4200, 7350, 8400, 12600]);
-      return { text: "We pay a supplier " + AED(a) + " by bank for an invoice already recorded.",
+      var a = 7350;
+      return { text: "We <b>pay the supplier</b> the balance of " + AED(a) + " by bank.",
         correct: [L("Supplier (AP)", a), L("Bank", 0, a)],
         wrong: [
           { lines: [L("Bank", a), L("Supplier (AP)", 0, a)], why: "Money is going out, so Bank is credited. Paying reduces what we owe, so Supplier is debited." },
@@ -327,8 +305,8 @@
 
     // C. Advances
     { id: "C1", g: "C", ref: 7, title: "Customer pays an advance", make: function () {
-      var a = pick([5000, 10000, 20000]), v = vat(a);
-      return { text: "A customer pays us " + AED(a + v) + " in advance. <b>We have not done the work yet.</b>",
+      var a = 10000, v = vat(a);
+      return { text: "Customer pays us " + AED(a + v) + " <b>in advance</b>. Work not done yet.",
         correct: [L("Bank", a + v), L("Advance from Customer", 0, a + v)],
         wrong: [
           { lines: [L("Bank", a + v), L("Sales", 0, a), L("VAT Output", 0, v)], why: "No sale yet, because the work is not done. The money is a liability until we deliver." },
@@ -338,8 +316,8 @@
         explain: "Their money is with us and we owe them the work, so it is a liability: Dr Bank / Cr Advance from Customer." };
     } },
     { id: "C2", g: "C", ref: 8, title: "Work done: advance becomes a sale", make: function () {
-      var a = pick([5000, 10000, 20000]), v = vat(a);
-      return { text: "Last month the customer paid us " + AED(a + v) + " in advance. Today <b>we completed the work</b>: " + AED(a) + " + 5% VAT.",
+      var a = 10000, v = vat(a);
+      return { text: "Customer paid " + AED(a + v) + " in advance. Now the <b>work is done</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Advance from Customer", a + v), L("Sales", 0, a), L("VAT Output", 0, v)],
         wrong: [
           { lines: [L("Bank", a + v), L("Sales", 0, a), L("VAT Output", 0, v)], why: "The cash came in last month and Bank was already debited. Clear the advance instead." },
@@ -348,20 +326,9 @@
         ],
         explain: "The liability is settled by doing the work: debit Advance from Customer and credit Sales + VAT Output." };
     } },
-    { id: "C3", g: "C", ref: 8, title: "Sale bigger than the advance", make: function () {
-      var adv = pick([4000, 5000, 6000]), a = pick([10000, 20000]), v = vat(a);
-      return { text: "A customer paid an advance of " + AED(adv) + ". We delivered goods worth " + AED(a) + " + 5% VAT. <b>The customer will pay the rest later.</b>",
-        correct: [L("Advance from Customer", adv), L("Customer (AR)", a + v - adv), L("Sales", 0, a), L("VAT Output", 0, v)],
-        wrong: [
-          { lines: [L("Customer (AR)", a + v), L("Sales", 0, a), L("VAT Output", 0, v)], why: "The advance of " + fmt(adv) + " is ignored, so the customer is charged in full and the advance stays in the books." },
-          { lines: [L("Advance from Customer", a + v), L("Sales", 0, a), L("VAT Output", 0, v)], why: "Only " + fmt(adv) + " was received in advance. The balance " + fmt(a + v - adv) + " is owed by the customer." },
-          { lines: [L("Bank", adv), L("Customer (AR)", a + v - adv), L("Sales", 0, a), L("VAT Output", 0, v)], why: "The advance was already banked when received. Debit Advance from Customer to clear it." }
-        ],
-        explain: "Use up the whole advance (" + fmt(adv) + "). The customer owes the balance of " + fmt(a + v - adv) + "." };
-    } },
     { id: "C4", g: "C", ref: 9, title: "We pay a supplier advance", make: function () {
-      var a = pick([4000, 5000, 8000]), v = vat(a);
-      return { text: "We pay a supplier " + AED(a + v) + " in advance. <b>The goods have not arrived yet.</b>",
+      var a = 5000, v = vat(a);
+      return { text: "We pay the supplier " + AED(a + v) + " <b>in advance</b>. Goods not received yet.",
         correct: [L("Advance to Supplier", a + v), L("Bank", 0, a + v)],
         wrong: [
           { lines: [L("Purchases", a), L("VAT Input", v), L("Bank", 0, a + v)], why: "No purchase yet, because the goods have not arrived. Until then it is an asset." },
@@ -370,9 +337,9 @@
         ],
         explain: "Our money is sitting with the supplier, so it is an asset: Dr Advance to Supplier / Cr Bank." };
     } },
-    { id: "C5", g: "C", ref: 10, title: "Goods arrive: advance becomes a purchase", make: function () {
-      var a = pick([4000, 5000, 8000]), v = vat(a);
-      return { text: "Last month we paid the supplier " + AED(a + v) + " in advance. Today <b>the goods arrived</b> with a tax invoice: " + AED(a) + " + 5% VAT.",
+    { id: "C5", g: "C", ref: 10, title: "Goods received: advance becomes a purchase", make: function () {
+      var a = 5000, v = vat(a);
+      return { text: "We paid the supplier " + AED(a + v) + " in advance. Now the <b>goods are received</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Purchases", a), L("VAT Input", v), L("Advance to Supplier", 0, a + v)],
         wrong: [
           { lines: [L("Purchases", a), L("VAT Input", v), L("Bank", 0, a + v)], why: "We already paid last month. Crediting Bank again pays twice. Clear the advance instead." },
@@ -383,11 +350,10 @@
     } },
 
     // D. Accruals
-    { id: "D1", g: "D", ref: 11, title: "Accrued expense at month end", make: function () {
-      var a = pick([1500, 2000, 3000]);
-      var what = pick(["electricity (DEWA)", "the audit fee", "cleaning services"]);
-      var acct = what.indexOf("electricity") === 0 ? "Electricity Expense" : what.indexOf("audit") > -1 ? "Audit Fee Expense" : "Cleaning Expense";
-      return { text: "It is 31 March. We used " + what + " worth about " + AED(a) + " in March, but <b>no invoice has arrived yet</b>.",
+    { id: "D1", g: "D", ref: 11, title: "Accrued expense", make: function () {
+      var a = 2000;
+      var acct = "Electricity Expense";
+      return { text: "Month end. Electricity used this month is about " + AED(a) + ". <b>No bill yet.</b>",
         correct: [L(acct, a), L("Accrued Expenses", 0, a)],
         wrong: [
           { lines: [L(acct, a), L("VAT Input", vat(a)), L("Accrued Expenses", 0, a + vat(a))], why: "No tax invoice yet, so no VAT Input can be booked. Accrue the expense only." },
@@ -396,9 +362,9 @@
         ],
         explain: "Book the cost in the month it was used, even without a bill: Dr Expense / Cr Accrued Expenses." };
     } },
-    { id: "D2", g: "D", ref: 12, title: "Invoice arrives for an accrual", make: function () {
-      var a = pick([1500, 2000, 3000]), v = vat(a);
-      return { text: "In March we accrued " + AED(a) + " for electricity. In April the <b>invoice arrives</b>: " + AED(a) + " + 5% VAT, payable next month.",
+    { id: "D2", g: "D", ref: 12, title: "Reverse accrued expense when invoice arrives", make: function () {
+      var a = 2000, v = vat(a);
+      return { text: "We accrued " + AED(a) + " electricity last month. Now the <b>invoice arrives</b>: " + AED(a) + " + 5% VAT, not paid yet.",
         correct: [L("Accrued Expenses", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)],
         wrong: [
           { lines: [L("Electricity Expense", a), L("VAT Input", v), L("Supplier (AP)", 0, a + v)], why: "The expense was already booked in March. Debiting it again counts it twice. Debit Accrued Expenses to reverse the accrual." },
@@ -407,9 +373,9 @@
         ],
         explain: "The invoice replaces the estimate: debit Accrued Expenses (clears it) and VAT Input, credit Supplier." };
     } },
-    { id: "D3", g: "D", ref: 13, title: "Accrued income at month end", make: function () {
-      var a = pick([4000, 6000, 9000]);
-      return { text: "It is 31 March. We finished consulting work worth " + AED(a) + " in March, but <b>we have not issued the invoice yet</b>.",
+    { id: "D3", g: "D", ref: 13, title: "Accrued income", make: function () {
+      var a = 6000;
+      return { text: "Month end. Consulting work of " + AED(a) + " is done. <b>No invoice issued yet.</b>",
         correct: [L("Accrued Income", a), L("Service Income", 0, a)],
         wrong: [
           { lines: [L("Customer (AR)", a + vat(a)), L("Service Income", 0, a), L("VAT Output", 0, vat(a))], why: "No invoice was issued, so no receivable or VAT yet. Use Accrued Income." },
@@ -418,9 +384,9 @@
         ],
         explain: "Book income in the month it was earned: Dr Accrued Income (asset) / Cr Service Income." };
     } },
-    { id: "D4", g: "D", ref: 14, title: "We invoice the accrued income", make: function () {
-      var a = pick([4000, 6000, 9000]), v = vat(a);
-      return { text: "In March we accrued " + AED(a) + " of consulting income. In April we <b>issue the invoice</b>: " + AED(a) + " + 5% VAT.",
+    { id: "D4", g: "D", ref: 14, title: "Reverse accrued income when we invoice", make: function () {
+      var a = 6000, v = vat(a);
+      return { text: "We accrued " + AED(a) + " income last month. Now we <b>issue the invoice</b>: " + AED(a) + " + 5% VAT.",
         correct: [L("Customer (AR)", a + v), L("Accrued Income", 0, a), L("VAT Output", 0, v)],
         wrong: [
           { lines: [L("Customer (AR)", a + v), L("Service Income", 0, a), L("VAT Output", 0, v)], why: "The income was already booked in March. Crediting it again counts it twice. Credit Accrued Income." },
@@ -431,9 +397,9 @@
     } },
 
     // E. Prepayments
-    { id: "E1", g: "E", ref: 15, title: "Pay a year's office rent", make: function () {
-      var r = pick([36000, 48000, 60000, 72000]), v = vat(r);
-      return { text: "On 1 January we pay " + AED(r) + " + 5% VAT for <b>12 months of office rent</b>.",
+    { id: "E1", g: "E", ref: 15, title: "Prepaid office rent", make: function () {
+      var r = 60000, v = vat(r);
+      return { text: "Paid <b>1 year</b> office rent: " + AED(r) + " + 5% VAT.",
         correct: [L("Prepaid Rent", r), L("VAT Input", v), L("Bank", 0, r + v)],
         wrong: [
           { lines: [L("Rent Expense", r), L("VAT Input", v), L("Bank", 0, r + v)], why: "The whole year would be expensed in January. It covers 12 months, so it is a prepaid asset first." },
@@ -442,9 +408,9 @@
         ],
         explain: "Paying in advance creates an asset: Dr Prepaid Rent + VAT Input / Cr Bank." };
     } },
-    { id: "E2", g: "E", ref: 16, title: "Monthly rent amortisation", make: function () {
-      var r = pick([36000, 48000, 60000, 72000]), m = r / 12;
-      return { text: "We prepaid " + AED(r) + " rent for 12 months. What is the entry on <b>31 January</b>?",
+    { id: "E2", g: "E", ref: 16, title: "Amortise prepaid rent (monthly)", make: function () {
+      var r = 60000, m = r / 12;
+      return { text: "Prepaid rent of " + AED(r) + " for 12 months. <b>Month-end</b> entry?",
         correct: [L("Rent Expense", m), L("Prepaid Rent", 0, m)],
         wrong: [
           { lines: [L("Prepaid Rent", m), L("Rent Expense", 0, m)], why: "This runs backwards. The expense grows (Dr) and the prepaid asset shrinks (Cr)." },
@@ -453,9 +419,9 @@
         ],
         explain: "Each month move one month's share (" + fmt(r) + " ÷ 12 = " + fmt(m) + ") from Prepaid Rent to Rent Expense." };
     } },
-    { id: "E3", g: "E", ref: 17, title: "Pay annual insurance", make: function () {
-      var r = pick([6000, 9600, 12000]), v = vat(r);
-      return { text: "We pay a <b>1-year insurance policy</b>: " + AED(r) + " + 5% VAT.",
+    { id: "E3", g: "E", ref: 17, title: "Prepaid insurance", make: function () {
+      var r = 6000, v = vat(r);
+      return { text: "Paid a <b>1-year</b> insurance policy: " + AED(r) + " + 5% VAT.",
         correct: [L("Prepaid Insurance", r), L("VAT Input", v), L("Bank", 0, r + v)],
         wrong: [
           { lines: [L("Insurance Expense", r), L("VAT Input", v), L("Bank", 0, r + v)], why: "The policy covers 12 months, so it starts as a prepaid asset, not an expense." },
@@ -464,9 +430,9 @@
         ],
         explain: "Dr Prepaid Insurance + VAT Input / Cr Bank. It is expensed monthly afterwards." };
     } },
-    { id: "E4", g: "E", ref: 17, title: "Monthly insurance amortisation", make: function () {
-      var r = pick([6000, 9600, 12000]), m = r / 12;
-      return { text: "We prepaid " + AED(r) + " for 12 months of insurance. What is the <b>month-end</b> entry?",
+    { id: "E4", g: "E", ref: 17, title: "Amortise prepaid insurance (monthly)", make: function () {
+      var r = 6000, m = r / 12;
+      return { text: "Prepaid insurance of " + AED(r) + " for 12 months. <b>Month-end</b> entry?",
         correct: [L("Insurance Expense", m), L("Prepaid Insurance", 0, m)],
         wrong: [
           { lines: [L("Insurance Expense", m), L("Accrued Expenses", 0, m)], why: "It was paid in advance, so reduce Prepaid Insurance. Accrued Expenses is for costs not yet billed." },
@@ -475,9 +441,9 @@
         ],
         explain: fmt(r) + " ÷ 12 = " + fmt(m) + " each month: Dr Insurance Expense / Cr Prepaid Insurance." };
     } },
-    { id: "E5", g: "E", ref: 18, title: "Pay a 2-year employee visa", make: function () {
-      var r = pick([4800, 7200, 9600]);
-      return { text: "We pay " + AED(r) + " for a <b>2-year employee visa</b> (government fees).",
+    { id: "E5", g: "E", ref: 18, title: "Prepaid employee visa", make: function () {
+      var r = 7200;
+      return { text: "Paid a <b>2-year</b> employee visa: " + AED(r) + " (government fee).",
         correct: [L("Prepaid Visa", r), L("Bank", 0, r)],
         wrong: [
           { lines: [L("Prepaid Visa", r - vat(r)), L("VAT Input", vat(r)), L("Bank", 0, r)], why: "Visa and government fees carry no VAT, so there is no VAT Input." },
@@ -486,9 +452,9 @@
         ],
         explain: "No VAT on government fees. Book it as Prepaid Visa and amortise over 24 months." };
     } },
-    { id: "E6", g: "E", ref: 18, title: "Monthly visa amortisation", make: function () {
-      var r = pick([4800, 7200, 9600]), m = r / 24;
-      return { text: "We prepaid " + AED(r) + " for a <b>2-year</b> employee visa. What is the month-end entry?",
+    { id: "E6", g: "E", ref: 18, title: "Amortise prepaid visa (monthly)", make: function () {
+      var r = 7200, m = r / 24;
+      return { text: "Prepaid visa of " + AED(r) + " for 2 years. <b>Month-end</b> entry?",
         correct: [L("Visa Expense", m), L("Prepaid Visa", 0, m)],
         wrong: [
           { lines: [L("Visa Expense", r / 12), L("Prepaid Visa", 0, r / 12)], why: "The visa covers 24 months, not 12: " + fmt(r) + " ÷ 24 = " + fmt(m) + "." },
@@ -499,11 +465,10 @@
     } },
 
     // F. Fixed assets
-    { id: "F1", g: "F", ref: 19, title: "Buy office furniture", make: function () {
-      var a = pick([24000, 36000, 48000]), v = vat(a);
-      var item = pick(["office furniture", "laptops", "a server"]);
-      var acct = item === "office furniture" ? "Furniture (Fixed Asset)" : "IT Equipment (Fixed Asset)";
-      return { text: "We buy " + item + " for " + AED(a) + " + 5% VAT, paid by bank. It will be used for <b>3 years</b>.",
+    { id: "F1", g: "F", ref: 19, title: "Buy a fixed asset", make: function () {
+      var a = 36000, v = vat(a);
+      var acct = "Furniture (Fixed Asset)";
+      return { text: "Bought office furniture: " + AED(a) + " + 5% VAT, paid by bank.",
         correct: [L(acct, a), L("VAT Input", v), L("Bank", 0, a + v)],
         wrong: [
           { lines: [L("Office Expense", a), L("VAT Input", v), L("Bank", 0, a + v)], why: "It lasts 3 years, so it is a fixed asset. It is expensed through depreciation, not all at once." },
@@ -512,9 +477,9 @@
         ],
         explain: "Long-life items are capitalised: Dr Fixed Asset + VAT Input / Cr Bank." };
     } },
-    { id: "F2", g: "F", ref: 20, title: "Monthly depreciation", make: function () {
-      var c = pick([[36000, 3], [72000, 3], [48000, 4], [60000, 5]]), cost = c[0], y = c[1], m = cost / (y * 12);
-      return { text: "Furniture cost " + AED(cost) + " and has a useful life of <b>" + y + " years</b> (straight line). What is the <b>monthly</b> depreciation entry?",
+    { id: "F2", g: "F", ref: 20, title: "Depreciation (monthly)", make: function () {
+      var cost = 36000, y = 3, m = cost / (y * 12);
+      return { text: "Furniture cost " + AED(cost) + ", life <b>3 years</b>. <b>Monthly</b> depreciation entry?",
         correct: [L("Depreciation Expense", m), L("Accumulated Depreciation", 0, m)],
         wrong: [
           { lines: [L("Depreciation Expense", m), L("Furniture (Fixed Asset)", 0, m)], why: "Never credit the asset directly. Credit Accumulated Depreciation so the original cost stays visible." },
@@ -525,9 +490,9 @@
     } },
 
     // G. Monthly expenses
-    { id: "G1", g: "G", ref: 21, title: "Month-end salary", make: function () {
-      var a = pick([18000, 25000, 40000]);
-      return { text: "It is 31 March. March salaries of " + AED(a) + " are due but <b>will be paid through WPS on 3 April</b>.",
+    { id: "G1", g: "G", ref: 21, title: "Salary at month end", make: function () {
+      var a = 25000;
+      return { text: "Month end. Salaries of " + AED(a) + " are due, <b>not paid yet</b>.",
         correct: [L("Salary Expense", a), L("Salary Payable", 0, a)],
         wrong: [
           { lines: [L("Salary Expense", a), L("VAT Input", vat(a)), L("Salary Payable", 0, a + vat(a))], why: "Salaries have no VAT." },
@@ -536,9 +501,9 @@
         ],
         explain: "Book the cost in March and show what we owe staff: Dr Salary Expense / Cr Salary Payable." };
     } },
-    { id: "G2", g: "G", ref: 21, title: "Pay salaries through WPS", make: function () {
-      var a = pick([18000, 25000, 40000]);
-      return { text: "On 3 April we pay March salaries of " + AED(a) + " through WPS. They were <b>accrued on 31 March</b>.",
+    { id: "G2", g: "G", ref: 21, title: "Pay salary through WPS", make: function () {
+      var a = 25000;
+      return { text: "We <b>pay</b> the salaries of " + AED(a) + " through WPS.",
         correct: [L("Salary Payable", a), L("Bank", 0, a)],
         wrong: [
           { lines: [L("Salary Expense", a), L("Bank", 0, a)], why: "The expense was booked on 31 March. Debiting it again counts it twice. Clear Salary Payable." },
@@ -547,21 +512,21 @@
         ],
         explain: "Paying clears the liability: Dr Salary Payable / Cr Bank." };
     } },
-    { id: "G3", g: "G", ref: 22, title: "Marketing campaign", make: function () {
-      var a = pick([2000, 4000, 6000]), v = vat(a);
-      return expenseCard("We pay " + AED(a) + " + 5% VAT <b>by bank</b> for a social media ad campaign.", "Marketing Expense", a, v, "Bank");
+    { id: "G3", g: "G", ref: 22, title: "Marketing expense", make: function () {
+      var a = 4000, v = vat(a);
+      return expenseCard("Paid for marketing: " + AED(a) + " + 5% VAT, <b>by bank</b>.", "Marketing Expense", a, v, "Bank");
     } },
     { id: "G4", g: "G", ref: 23, title: "Office supplies", make: function () {
-      var a = pick([300, 500, 800]), v = vat(a);
-      return expenseCard("We buy stationery and printer paper for " + AED(a) + " + 5% VAT, paid <b>in cash</b>.", "Office Supplies Expense", a, v, "Cash");
+      var a = 500, v = vat(a);
+      return expenseCard("Bought office supplies: " + AED(a) + " + 5% VAT, <b>in cash</b>.", "Office Supplies Expense", a, v, "Cash");
     } },
     { id: "G5", g: "G", ref: 24, title: "Internet and phone bill", make: function () {
-      var a = pick([600, 800, 1200]), v = vat(a);
-      return expenseCard("The monthly internet and phone bill is " + AED(a) + " + 5% VAT, paid <b>by bank</b>.", "Telephone & Internet Expense", a, v, "Bank");
+      var a = 800, v = vat(a);
+      return expenseCard("Internet and phone bill: " + AED(a) + " + 5% VAT, <b>by bank</b>.", "Telephone & Internet Expense", a, v, "Bank");
     } },
     { id: "G6", g: "G", ref: 25, title: "Bank charges", make: function () {
-      var a = pick([50, 150, 250]);
-      return { text: "The bank statement shows the bank <b>deducted " + AED(a) + " in charges</b> from our account.",
+      var a = 150;
+      return { text: "Bank <b>deducted " + AED(a) + "</b> charges.",
         correct: [L("Bank Charges Expense", a), L("Bank", 0, a)],
         wrong: [
           { lines: [L("Bank", a), L("Bank Charges Expense", 0, a)], why: "Money left our account, so Bank is credited and the expense is debited." },
@@ -773,7 +738,7 @@
     html += "</div>";
 
     if (!weak.length) {
-      html += "<div class=\"miss\"><h4>A clean round</h4><p>Every entry was right. The next round deals a fresh mix with new amounts.</p></div>";
+      html += "<div class=\"miss\"><h4>A clean round</h4><p>Every entry was right. The next round deals the same entries again in a new order.</p></div>";
     } else {
       html += "<div class=\"miss\"><h4>Where you went wrong</h4><p>These are the " + weak.length + " area" + (weak.length > 1 ? "s" : "") + " to revise. The next round gives you 2 extra cards from each.</p></div>";
       weak.forEach(function (g) {
