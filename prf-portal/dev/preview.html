@@ -189,11 +189,11 @@ section.box h3{margin:0 0 10px;font-size:13px}
         <select id="sYear"></select>
         <select id="sProject"><option value="">All projects</option></select>
         <span class="grow"></span>
-        <button class="mgr" onclick="schedFromBudget()">Create schedules from budget</button>
+        <button class="mgr" onclick="schedFromBudget(this)">Create schedules from budget</button>
         <button onclick="runDue()">Create due "To Collect" lines now</button>
         <button class="primary" onclick="openSchedule()">+ Add schedule</button>
       </div>
-      <p class="muted">Each schedule adds a <b>To Collect</b> line at the start of every period (every morning the system checks). Monthly: each month · Quarterly: Jan, Apr, Jul, Oct (invoice month Mar/Jun/Sep/Dec) · Half-yearly: Jan, Jul (Jun/Dec) · Annual: Jan (Dec).</p>
+      <p class="muted">Each schedule adds a <b>To Collect</b> line at the start of every period (every morning the system checks). Monthly: each month · Quarterly: Jan, Apr, Jul, Oct (invoice month Mar/Jun/Sep/Dec) · Half-yearly: Jan, Jul (Jun/Dec) · Annual: Jan (Dec).<br>“Create schedules from budget” uses the budget’s Frequency column, otherwise: master community quarterly · DCD and RERA fee annual · pest control and waste monthly · water tank and facade cleaning half-yearly · everything else quarterly. Click a schedule to change it.</p>
       <div class="gridwrap"><table>
         <thead><tr><th>ID</th><th>Project</th><th>Budget code</th><th>Vendor</th><th>Frequency</th><th>From month</th><th>Active</th></tr></thead>
         <tbody id="schedBody"></tbody>
@@ -1106,7 +1106,15 @@ function aed(n) { return n == null || n === '' ? '' : Number(n).toLocaleString('
 function d(s) { if (!s) return ''; var x = new Date(s); return isNaN(x) ? s : x.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
 function dt(s) { if (!s) return ''; var x = new Date(s); return isNaN(x) ? s : x.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function today() { var x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); }
-function toast(m) { var t = $('toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.add('hidden'); }, 2600); }
+function toast(m, ms) { var t = $('toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.add('hidden'); }, ms || 2600); }
+function notify(m) { toast(m, 7000); }
+/* Two-click confirm without browser pop-ups: first click arms the button, second click runs. */
+function armed(btn, label) {
+  if (btn.dataset.armed) { clearTimeout(btn._t); btn.textContent = btn.dataset.orig; delete btn.dataset.armed; return true; }
+  btn.dataset.orig = btn.textContent; btn.dataset.armed = '1'; btn.textContent = label;
+  btn._t = setTimeout(function () { if (btn.dataset.armed) { btn.textContent = btn.dataset.orig; delete btn.dataset.armed; } }, 5000);
+  return false;
+}
 function opts(list, sel, blank) {
   return (blank != null ? '<option value="">' + esc(blank) + '</option>' : '') +
     list.map(function (o) { var v = typeof o === 'object' ? o.v : o, l = typeof o === 'object' ? o.l : o;
@@ -1263,13 +1271,13 @@ function renderRequests() {
 
 function approveSelected() {
   var ids = Object.keys(SEL);
-  if (!ids.length || !confirm('Approve ' + ids.length + ' request(s)?')) return;
+  if (!ids.length || !armed($('bulkBtn'), 'Click again to approve ' + ids.length + ' request(s)')) return;
   call('bulkApprove', { ids: ids }).then(function (r) {
     SEL = {};
     toast(r.done.length + ' approved' + (r.errors.length ? ', ' + r.errors.length + ' failed' : ''));
-    if (r.errors.length) alert(r.errors.join('\n'));
+    if (r.errors.length) notify(r.errors.join(' · '));
     loadRequests();
-  }).catch(function (e) { alert(e.message); });
+  }).catch(function (e) { notify(e.message); });
 }
 
 /* ============================================================ drawer */
@@ -1296,7 +1304,7 @@ function openRequest(id) {
   call('requestDetail', { id: id }).then(function (D) {
     if (D.actions.indexOf('edit') >= 0) return editForm(D.request, D);
     viewRequest(D);
-  }).catch(function (e) { alert(e.message); });
+  }).catch(function (e) { notify(e.message); });
 }
 
 /* ---------- edit / submit form ---------- */
@@ -1308,7 +1316,8 @@ function editForm(r, D) {
     '<section class="box"><h3>Invoice</h3><div class="form">' +
     '<label>Project<select id="eProject">' + opts(B.projects, r.project, 'Choose…') + '</select></label>' +
     '<label>Budget year<select id="eYear">' + opts(years(), r.year) + '</select></label>' +
-    '<label class="full">Vendor<div class="row"><select id="eVendor"></select><button type="button" onclick="addVendorPrompt()">+ Add vendor</button></div></label>' +
+    '<label class="full">Vendor<div class="row"><select id="eVendor"></select><button type="button" onclick="$(\'eNewV\').classList.toggle(\'hidden\');$(\'eNewVName\').focus()">+ Add vendor</button></div></label>' +
+    '<div class="full row hidden" id="eNewV"><input id="eNewVName" placeholder="New vendor name"><button type="button" onclick="addVendorPrompt()">Save vendor</button></div>' +
     '<label class="full">Budget code<select id="eLine"></select></label>' +
     '<div class="full budget" id="eBudget"></div>' +
     '<label>Invoice no.<input id="eInv" value="' + esc(r.invoiceNo || '') + '" placeholder="Paste invoice number"></label>' +
@@ -1406,16 +1415,16 @@ function editForm(r, D) {
 }
 
 function addVendorPrompt() {
-  var n = prompt('New vendor name');
-  if (!n) return;
+  var n = $('eNewVName').value.trim();
+  if (!n) { $('eNewVName').focus(); return; }
   call('addVendor', { name: n }).then(function (list) {
     B.vendors = list;
     var sel = $('eVendor');
     if (!Array.prototype.some.call(sel.options, function (o) { return o.value === n.trim(); })) sel.insertAdjacentHTML('beforeend', '<option>' + esc(n.trim()) + '</option>');
-    sel.value = n.trim();
+    sel.value = n.trim(); $('eNewVName').value = ''; $('eNewV').classList.add('hidden');
     $('fVendor').innerHTML = opts(list, $('fVendor').value, 'All vendors');
     toast('Vendor added');
-  }).catch(function (e) { alert(e.message); });
+  }).catch(function (e) { notify(e.message); });
 }
 
 /* ---------- read-only view + actions ---------- */
@@ -1480,13 +1489,13 @@ function actionSection(D, only) {
 
 function wireActions(D) {
   var id = D.request.id;
-  function run(p) { p.then(function () { toast('Done'); closeDrawer(); loadRequests(); }).catch(function (e) { var el = $('aErr'); if (el) showErr(el, e); else alert(e.message); }); }
+  function run(p) { p.then(function () { toast('Done'); closeDrawer(); loadRequests(); }).catch(function (e) { var el = $('aErr'); if (el) showErr(el, e); else notify(e.message); }); }
   if ($('aApprove')) $('aApprove').onclick = function () { run(call('approve', { id: id, remark: $('aRemark').value })); };
   if ($('aReject')) $('aReject').onclick = function () { run(call('reject', { id: id, remark: $('aRemark').value })); };
   if ($('aBank')) $('aBank').onclick = function () { run(call('bankInitiated', { id: id, bankRef: $('aRef').value })); };
   if ($('aMarkPaid')) $('aMarkPaid').onclick = function () { run(readFile($('aProof')).then(function (f) { return call('markPaid', { id: id, paidDate: $('aPaid').value, file: f }); })); };
   if ($('aNob')) $('aNob').onclick = function () { run(call('nobroker', { id: id })); };
-  if ($('aCancel')) $('aCancel').onclick = function () { if (confirm('Cancel ' + id + '?')) run(call('cancel', { id: id, remark: $('cRemark').value })); };
+  if ($('aCancel')) $('aCancel').onclick = function () { if (armed($('aCancel'), 'Click again to cancel ' + id)) run(call('cancel', { id: id, remark: $('cRemark').value })); };
   if ($('fuAdd')) $('fuAdd').onclick = function () {
     readFile($('fuFile')).then(function (f) {
       return call('addFollowUp', { id: id, data: { type: $('fuType').value, date: $('fuDate').value, remark: $('fuRemark').value, file: f } });
@@ -1560,13 +1569,13 @@ function openSchedule(s) {
       .then(function () { toast('Schedule saved'); closeDrawer(); loadSchedules(); }).catch(function (e) { showErr($('scErr'), e); });
   };
 }
-function schedFromBudget() {
+function schedFromBudget(btn) {
   var y = $('sYear').value, p = $('sProject').value;
-  if (!confirm('Create a collection schedule for every ' + y + ' budget code' + (p ? ' of ' + p : ' in all projects') + ' that has none yet?\n\nDefaults: master community quarterly, DCD and RERA fee annual, pest control and waste monthly, water tank and facade cleaning half-yearly, everything else quarterly. You can change each one afterwards.')) return;
-  call('schedulesFromBudget', { year: y, project: p }).then(function (n) { toast(n + ' schedules created'); loadSchedules(); }).catch(function (e) { alert(e.message); });
+  if (!armed(btn, 'Click again: create ' + y + ' schedules for ' + (p || 'all projects'))) return;
+  call('schedulesFromBudget', { year: y, project: p }).then(function (n) { toast(n + ' schedules created'); loadSchedules(); }).catch(function (e) { notify(e.message); });
 }
 function runDue() {
-  call('generateDue').then(function (ids) { toast(ids.length ? ids.length + ' To Collect lines created' : 'Nothing new is due'); loadRequests(); }).catch(function (e) { alert(e.message); });
+  call('generateDue').then(function (ids) { toast(ids.length ? ids.length + ' To Collect lines created' : 'Nothing new is due'); loadRequests(); }).catch(function (e) { notify(e.message); });
 }
 
 /* ============================================================ budget */
@@ -1600,6 +1609,7 @@ function openUpload() {
     '<tr><td><b>Frequency</b></td><td class="wrap">Optional — Monthly, Quarterly, Half-yearly or Annual</td></tr>' +
     '</tbody></table>' +
     '<p><a href="#" id="uTpl">Download a blank template (CSV)</a></p>' +
+    '<details style="margin-bottom:12px"><summary class="muted">Or copy the template text</summary><pre style="background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto;user-select:all">Code,Description,Amount,Vendor,Group,Frequency\n01-001,Cleaning services,180000,Kawthar Al Khair,Cleaning &amp; Maintenance,Monthly\n01-002,MEP maintenance,144000,IMB Technical Services,Cleaning &amp; Maintenance,Monthly\n04-001,Pest control,7200,,,Monthly</pre></details>' +
     '<div class="form"><label>Project<select id="uProject">' + opts(B.projects, $('bProject').value) + '</select></label>' +
     '<label>Budget year<select id="uYear">' + opts(years(), $('bYear').value) + '</select></label>' +
     '<label class="full">File<input type="file" id="uFile" accept=".xlsx,.xls,.csv"></label></div>' +
@@ -1633,7 +1643,7 @@ function openUpload() {
     rd.readAsArrayBuffer(f);
   };
   $('uGo').onclick = function () {
-    if (!confirm('This replaces the whole ' + $('uYear').value + ' budget of ' + $('uProject').value + '. Invoices already entered stay linked by code. Continue?')) return;
+    if (!armed($('uGo'), 'Click again: replace the ' + $('uYear').value + ' budget of ' + $('uProject').value)) return;
     call('uploadBudget', { year: $('uYear').value, project: $('uProject').value, rows: UPLOAD_ROWS }).then(function (r) {
       toast(r.rows + ' budget rows uploaded'); closeDrawer();
       $('bProject').value = $('uProject').value; $('bYear').value = $('uYear').value; loadBudget();

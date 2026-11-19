@@ -13,3 +13,16 @@ let out = index.replace('<body>', '<body>\n' + banner).replace('<script>\n/* ===
 if (out === index) throw new Error('injection points not found');
 fs.writeFileSync(path.join(__dirname, 'preview.html'), out);
 console.log('wrote', path.join(__dirname, 'preview.html'));
+
+// Optional: `--artifact <file>` writes a copy without the document skeleton,
+// for hosting as a claude.ai artifact (the host adds <html>/<head>/<body>).
+const i = process.argv.indexOf('--artifact');
+if (i > 0) {
+  const art = out
+    .replace(/<!DOCTYPE html>\s*<html[^>]*>\s*<head>/i, '')
+    .replace(/<base target="_top">\s*<meta charset="utf-8">\s*<meta name="viewport"[^>]*>\s*/i, '')
+    .replace(/<\/head>\s*<body>/i, '')
+    .replace(/<\/body>\s*<\/html>\s*$/i, '');
+  fs.writeFileSync(process.argv[i + 1], art);
+  console.log('wrote', process.argv[i + 1]);
+}
