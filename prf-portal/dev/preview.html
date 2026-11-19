@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRF Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1d2430; --muted:#667085; --line:#e3e6eb; --line2:#eef0f3;
+  --accent:#1f5fbf; --accent-ink:#fff; --hover:#f2f6fd; --sel:#e6efff;
+  --ok:#137a4b; --ok-bg:#e5f5ec; --warn:#9a5b00; --warn-bg:#fff3dc; --bad:#b42318; --bad-bg:#fde8e6;
+  --info:#1f5fbf; --info-bg:#e8f0fd; --gray-bg:#eef0f3;
+  --shadow:0 8px 30px rgba(16,24,40,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --panel:#181c22; --ink:#e6e9ee; --muted:#98a2b3; --line:#2a3039; --line2:#20252c;
+    --accent:#5b9bff; --accent-ink:#0b1220; --hover:#1e2632; --sel:#1d2b44;
+    --ok:#5fd39b; --ok-bg:#163326; --warn:#f3b955; --warn-bg:#3a2c12; --bad:#ff8a7d; --bad-bg:#3d1b18;
+    --info:#8cb8ff; --info-bg:#1a2a45; --gray-bg:#232931; --shadow:0 8px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --panel:#181c22; --ink:#e6e9ee; --muted:#98a2b3; --line:#2a3039; --line2:#20252c;
+  --accent:#5b9bff; --accent-ink:#0b1220; --hover:#1e2632; --sel:#1d2b44;
+  --ok:#5fd39b; --ok-bg:#163326; --warn:#f3b955; --warn-bg:#3a2c12; --bad:#ff8a7d; --bad-bg:#3d1b18;
+  --info:#8cb8ff; --info-bg:#1a2a45; --gray-bg:#232931; --shadow:0 8px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{width:100%;min-height:54px;resize:vertical}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 12px}
+button:hover{background:var(--hover)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.danger{color:var(--bad);border-color:var(--bad)}
+button.ok{color:var(--ok);border-color:var(--ok)}
+button:disabled{opacity:.5;cursor:not-allowed}
+a{color:var(--accent)}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* login */
+#login{display:flex;align-items:center;justify-content:center;min-height:100%;padding:16px}
+#login form{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:28px;width:100%;max-width:340px;display:grid;gap:12px}
+#login h1{margin:0;font-size:20px}
+
+/* shell */
+header{display:flex;align-items:center;gap:16px;padding:0 16px;height:48px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header .brand{font-weight:700;font-size:15px;white-space:nowrap}
+nav{display:flex;gap:2px;overflow-x:auto}
+nav button{border:0;border-radius:0;background:none;padding:14px 12px;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap}
+nav button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+header .me{margin-left:auto;display:flex;gap:8px;align-items:center;white-space:nowrap}
+main{padding:12px 16px 40px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.toolbar .grow{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chip b{font-variant-numeric:tabular-nums}
+.chip.on{background:var(--sel);border-color:var(--accent)}
+
+/* grid */
+.gridwrap{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:calc(100vh - 190px)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:middle}
+th{position:sticky;top:0;background:var(--panel);font-weight:600;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:1}
+td{white-space:nowrap}
+td.wrap{white-space:normal;min-width:180px}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--hover)}
+tbody tr.sel{background:var(--sel)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--gray-bg);color:var(--muted)}
+.pill.AE{background:var(--info-bg);color:var(--info)}
+.pill.REVIEWER{background:var(--warn-bg);color:var(--warn)}
+.pill.MANAGER{background:#efe7fb;color:#6a3fb5}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.MANAGER{background:#2c2340;color:#c6a8ff}}
+:root[data-theme="dark"] .pill.MANAGER{background:#2c2340;color:#c6a8ff}
+.pill.done{background:var(--ok-bg);color:var(--ok)}
+.pill.ret{background:var(--bad-bg);color:var(--bad)}
+.late{color:var(--bad);font-weight:600}
+.warn{color:var(--warn);font-weight:600}
+.neg{color:var(--bad)}
+
+/* drawer */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:9}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--panel);box-shadow:var(--shadow);z-index:10;display:flex;flex-direction:column}
+#drawer .dh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+#drawer .dh h2{margin:0;font-size:16px}
+#drawer .db{overflow:auto;padding:16px;flex:1}
+section.box{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+section.box h3{margin:0 0 10px;font-size:13px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.form label > *{color:var(--ink)}
+.form .full{grid-column:1/-1}
+@media (max-width:560px){.form{grid-template-columns:1fr}}
+.row{display:flex;gap:6px}
+.row > *{flex:1}
+.row > button{flex:none}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 12px}
+.kv div:nth-child(odd){color:var(--muted)}
+.budget{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.budget div{background:var(--bg);border-radius:6px;padding:8px}
+.budget small{display:block;color:var(--muted);font-size:11px}
+.budget b{font-variant-numeric:tabular-nums}
+@media (max-width:560px){.budget{grid-template-columns:1fr 1fr}}
+.checks label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;color:var(--ink);font-size:13px}
+.checks input{margin-top:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:8px 0;border-bottom:1px solid var(--line2)}
+.tl li:last-child{border-bottom:0}
+.tl .meta{grid-column:1/-1;color:var(--muted);font-size:12px}
+.err{background:var(--bad-bg);color:var(--bad);padding:8px 10px;border-radius:6px;margin-bottom:10px;white-space:pre-wrap}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:6px;z-index:20;box-shadow:var(--shadow)}
+.bar{height:6px;background:var(--line2);border-radius:3px;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.over{background:var(--bad)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+#busy{position:fixed;top:0;left:0;right:0;height:2px;background:var(--accent);z-index:30;animation:b 1s linear infinite}
+@keyframes b{0%{transform:scaleX(.1);transform-origin:left}50%{transform:scaleX(.6)}100%{transform:scaleX(.1);transform-origin:right}}
+@media (max-width:720px){header{flex-wrap:wrap;height:auto;padding:6px 16px}header .me{margin-left:0}main{padding:12px 16px}}
+</style>
+</head>
+<body>
+<div style="background:#fff3dc;color:#7a4a00;padding:6px 16px;font:12px system-ui;border-bottom:1px solid #f0d9a8">PREVIEW with sample data — logins: minhas / ihtisham / shabir / osama, password <b>demo</b>. <a href="#" onclick="PRF_PREVIEW.reset();return false">Reset sample data</a></div>
+<div id="busy" class="hidden"></div>
+
+<div id="login">
+  <form onsubmit="doLogin(event)">
+    <h1>PRF Portal</h1>
+    <div class="muted">Payment requests · Rafah projects</div>
+    <div id="loginErr" class="err hidden"></div>
+    <input id="lu" placeholder="Username" autocomplete="username" required>
+    <input id="lp" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button class="primary" type="submit">Log in</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">PRF Portal</div>
+    <nav id="tabs">
+      <button data-tab="requests" class="on">Requests</button>
+      <button data-tab="schedules">Collection schedule</button>
+      <button data-tab="budget">Budget</button>
+      <button data-tab="reports">Log &amp; reports</button>
+    </nav>
+    <div class="me"><span id="meName"></span><span id="meRole" class="pill"></span>
+      <button onclick="openPassword()">Password</button><button onclick="doLogout()">Log out</button></div>
+  </header>
+
+  <main>
+    <!-- REQUESTS -->
+    <div id="tab-requests">
+      <div class="chips" id="chips"></div>
+      <div class="toolbar">
+        <select id="fYear"></select>
+        <select id="fProject"><option value="">All projects</option></select>
+        <select id="fVendor"><option value="">All vendors</option></select>
+        <input id="fInvoice" placeholder="Invoice no. or PRF no." style="width:180px">
+        <select id="fStatus"><option value="">All statuses</option></select>
+        <label><input type="checkbox" id="fMine"> Pending on me</label>
+        <span class="grow"></span>
+        <button id="bulkBtn" class="hidden ok" onclick="approveSelected()">Approve selected</button>
+        <button id="newBtn" class="primary" onclick="openNew()">+ New request</button>
+      </div>
+      <div class="gridwrap"><table>
+        <thead><tr>
+          <th id="selHead"></th><th>PRF no.</th><th>Date</th><th>Project</th><th>Vendor</th><th>Invoice no.</th>
+          <th>Budget code</th><th>Period</th><th class="num">Amount</th><th class="num">Budget</th><th class="num">Balance</th>
+          <th>Status</th><th>With</th><th class="num">Days</th><th>Follow-ups</th>
+        </tr></thead>
+        <tbody id="reqBody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- SCHEDULES -->
+    <div id="tab-schedules" class="hidden">
+      <div class="toolbar">
+        <select id="sYear"></select>
+        <select id="sProject"><option value="">All projects</option></select>
+        <span class="grow"></span>
+        <button class="mgr" onclick="schedFromBudget()">Create schedules from budget</button>
+        <button onclick="runDue()">Create due "To Collect" lines now</button>
+        <button class="primary" onclick="openSchedule()">+ Add schedule</button>
+      </div>
+      <p class="muted">Each schedule adds a <b>To Collect</b> line at the start of every period (every morning the system checks). Monthly: each month · Quarterly: Jan, Apr, Jul, Oct (invoice month Mar/Jun/Sep/Dec) · Half-yearly: Jan, Jul (Jun/Dec) · Annual: Jan (Dec).</p>
+      <div class="gridwrap"><table>
+        <thead><tr><th>ID</th><th>Project</th><th>Budget code</th><th>Vendor</th><th>Frequency</th><th>From month</th><th>Active</th></tr></thead>
+        <tbody id="schedBody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- BUDGET -->
+    <div id="tab-budget" class="hidden">
+      <div class="toolbar">
+        <select id="bYear"></select>
+        <select id="bProject"></select>
+        <span class="grow"></span>
+        <button class="mgr primary" onclick="openUpload()">Upload budget Excel</button>
+      </div>
+      <div class="gridwrap"><table>
+        <thead><tr><th>Budget code</th><th>Description</th><th>Vendor</th><th>Frequency</th><th class="num">Budget</th><th class="num">Used</th><th class="num">Paid</th><th class="num">Balance</th><th>Used %</th><th class="num">Invoices</th></tr></thead>
+        <tbody id="budBody"></tbody>
+        <tfoot id="budFoot"></tfoot>
+      </table></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="tab-reports" class="hidden">
+      <div class="cards">
+        <section class="box"><h3>Time taken by each person</h3>
+          <p class="muted" style="margin-top:0">Days from when a request reached them until they acted on it.</p>
+          <table><thead><tr><th>Person</th><th class="num">Steps done</th><th class="num">Avg days</th><th class="num">Longest</th><th class="num">Rejections</th></tr></thead><tbody id="repPeople"></tbody></table>
+        </section>
+        <section class="box"><h3>Each stage</h3>
+          <p class="muted" style="margin-top:0">Average days spent in a stage, and what is waiting there now.</p>
+          <table><thead><tr><th>Stage</th><th class="num">Passed</th><th class="num">Avg days</th><th class="num">Waiting now</th><th class="num">Oldest waiting</th></tr></thead><tbody id="repStages"></tbody></table>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="scrim" class="hidden" onclick="closeDrawer()"></div>
+<aside id="drawer" class="hidden">
+  <div class="dh"><h2 id="dTitle"></h2><span id="dStatus"></span><span style="flex:1"></span><button onclick="closeDrawer()">Close</button></div>
+  <div class="db" id="dBody"></div>
+</aside>
+<div id="toast" class="hidden"></div>
+
+<script>
+/**
+ * PRF Portal — core workflow logic.
+ *
+ * This file is plain JavaScript with no Google-specific calls. Everything that
+ * touches Sheets, Drive, the cache or hashing goes through the global `STORE`
+ * object, which Server.gs provides in Apps Script and dev/mock-store.js
+ * provides in the local preview. Keep it that way so the preview stays honest.
+ */
+
+var PROJECTS = [
+  'SIT Tower',
+  'Al Falak Residence',
+  'BNH Smart Tower',
+  'Equiti Residence',
+  'Equiti Arcade',
+  'Equiti Apartments',
+  'BNH Tower 03'
+];
+
+var ROLES = { AE: 'Accounts Executive', REVIEWER: 'Reviewer', MANAGER: 'Manager' };
+
+var ST = {
+  TO_COLLECT: 'To Collect',
+  PENDING_REVIEW: 'Pending Review',
+  PENDING_MGR: 'Pending Manager Approval',
+  PENDING_BANK_INIT: 'Pending Bank Initiation',
+  PENDING_BANK_APPROVAL: 'Pending Bank Approval',
+  WITH_BANK: 'Pending with Bank',
+  PENDING_NOBROKER: 'Paid - Update NoBroker',
+  CLOSED: 'Closed',
+  RETURNED: 'Returned',
+  CANCELLED: 'Cancelled'
+};
+
+/** Which role has to act on each status. */
+var OWNER = {};
+OWNER[ST.TO_COLLECT] = 'AE';
+OWNER[ST.PENDING_REVIEW] = 'REVIEWER';
+OWNER[ST.PENDING_MGR] = 'MANAGER';
+OWNER[ST.PENDING_BANK_INIT] = 'AE';
+OWNER[ST.PENDING_BANK_APPROVAL] = 'MANAGER';
+OWNER[ST.WITH_BANK] = 'AE';
+OWNER[ST.PENDING_NOBROKER] = 'AE';
+OWNER[ST.RETURNED] = 'AE';
+
+/** Statuses whose amount counts as budget used (committed). */
+var NOT_COMMITTED = [ST.TO_COLLECT, ST.CANCELLED];
+var PAID_STATUSES = [ST.PENDING_NOBROKER, ST.CLOSED];
+
+var CHECKS = [
+  { key: 'voucher', label: 'NoBroker voucher is attached' },
+  { key: 'invoiceSigned', label: 'Invoice is signed & stamped by both parties' },
+  { key: 'reportSigned', label: 'Service report is signed & stamped by both parties' },
+  { key: 'licence', label: 'Trade licence is active on the portal' },
+  { key: 'contract', label: 'Contract is on the portal' },
+  { key: 'iban', label: 'IBAN on the invoice matches the bank IBAN letter' }
+];
+
+var FREQUENCIES = ['Monthly', 'Quarterly', 'Half-yearly', 'Annual'];
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+var FOLLOWUP_TYPES = ['Reminder sent', 'Documents missing', 'Invoice received', 'Other'];
+
+/* ------------------------------------------------------------------ helpers */
+
+function fail(msg) { throw new Error(msg); }
+function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+function round2(n) { return Math.round(num(n) * 100) / 100; }
+function str(v) { return v == null ? '' : String(v).trim(); }
+function nowIso() { return STORE.now().toISOString(); }
+function parseJson(s, dflt) { try { return s ? JSON.parse(s) : dflt; } catch (e) { return dflt; } }
+function daysBetween(a, b) { return (new Date(b) - new Date(a)) / 86400000; }
+
+function nextId(prefix, rows, field) {
+  var max = 0;
+  rows.forEach(function (r) {
+    var m = String(r[field] || '').match(/(\d+)$/);
+    if (m) max = Math.max(max, Number(m[1]));
+  });
+  return prefix + String(max + 1).padStart(4, '0');
+}
+
+/* -------------------------------------------------------------------- auth */
+
+function login(username, password) {
+  username = str(username).toLowerCase();
+  var u = STORE.readAll('Users').filter(function (x) {
+    return str(x.username).toLowerCase() === username && str(x.active) !== 'FALSE';
+  })[0];
+  if (!u || STORE.hash(u.salt + password) !== u.passHash) fail('Wrong username or password.');
+  var token = STORE.newToken();
+  STORE.cachePut('sess_' + token, u.username);
+  return { token: token, user: publicUser(u) };
+}
+
+function logout(token) { STORE.cacheRemove('sess_' + token); return true; }
+
+function userFromToken(token) {
+  var name = token && STORE.cacheGet('sess_' + token);
+  if (!name) fail('SESSION_EXPIRED');
+  var u = STORE.readAll('Users').filter(function (x) { return x.username === name; })[0];
+  if (!u) fail('SESSION_EXPIRED');
+  return u;
+}
+
+function publicUser(u) {
+  return { username: u.username, name: u.name, role: u.role, roleLabel: ROLES[u.role] || u.role };
+}
+
+function changePassword(user, oldPw, newPw) {
+  if (STORE.hash(user.salt + oldPw) !== user.passHash) fail('Current password is wrong.');
+  if (str(newPw).length < 6) fail('New password must be at least 6 characters.');
+  var salt = STORE.newToken().slice(0, 12);
+  STORE.update('Users', 'username', user.username, { salt: salt, passHash: STORE.hash(salt + newPw) });
+  return true;
+}
+
+function requireRole(user, roles) {
+  if (roles.indexOf(user.role) < 0) fail('Your role (' + (ROLES[user.role] || user.role) + ') cannot do this.');
+}
+
+/* ------------------------------------------------------------------ budget */
+
+/**
+ * Budget rows are grouped into "lines". Rows that share a Group value inside
+ * the same project + year (e.g. "Cleaning & Maintenance") become ONE line, so
+ * a single invoice/payment is tracked against their combined amount.
+ */
+function budgetLines(year, project) {
+  var lines = {};
+  STORE.readAll('Budget').forEach(function (b) {
+    if (year && String(b.year) !== String(year)) return;
+    if (project && b.project !== project) return;
+    var group = str(b.group);
+    var key = b.year + '|' + b.project + '|' + (group ? 'G:' + group : 'C:' + str(b.code));
+    var l = lines[key];
+    if (!l) {
+      l = lines[key] = {
+        key: key, year: String(b.year), project: b.project, group: group,
+        codes: [], descriptions: [], vendors: [], amount: 0, frequency: str(b.frequency)
+      };
+    }
+    l.codes.push(str(b.code));
+    l.descriptions.push(str(b.description));
+    if (str(b.vendor) && l.vendors.indexOf(str(b.vendor)) < 0) l.vendors.push(str(b.vendor));
+    l.amount += num(b.amount);
+    if (!l.frequency && str(b.frequency)) l.frequency = str(b.frequency);
+  });
+  return Object.keys(lines).map(function (k) {
+    var l = lines[k];
+    l.amount = round2(l.amount);
+    l.label = l.group
+      ? l.group + ' (' + l.codes.join(', ') + ')'
+      : l.codes[0] + ' - ' + l.descriptions[0];
+    return l;
+  }).sort(function (a, b) { return a.label < b.label ? -1 : 1; });
+}
+
+function lineUsage(lineKey, requests, excludeId) {
+  var committed = 0, paid = 0, count = 0;
+  requests.forEach(function (r) {
+    if (r.lineKey !== lineKey || r.id === excludeId) return;
+    if (NOT_COMMITTED.indexOf(r.status) >= 0) return;
+    committed += num(r.total);
+    count++;
+    if (PAID_STATUSES.indexOf(r.status) >= 0) paid += num(r.total);
+  });
+  return { committed: round2(committed), paid: round2(paid), count: count };
+}
+
+function budgetSummary(year, project) {
+  var reqs = STORE.readAll('Requests');
+  return budgetLines(year, project).map(function (l) {
+    var u = lineUsage(l.key, reqs);
+    l.committed = u.committed; l.paid = u.paid; l.invoices = u.count;
+    l.balance = round2(l.amount - u.committed);
+    return l;
+  });
+}
+
+/**
+ * Replace the budget for one project + year with uploaded rows.
+ * rows: [{code, description, amount, vendor?, group?, frequency?}]
+ */
+function uploadBudget(user, year, project, rows) {
+  requireRole(user, ['MANAGER']);
+  year = str(year); project = str(project);
+  if (!/^\d{4}$/.test(year)) fail('Budget year must be 4 digits.');
+  if (PROJECTS.indexOf(project) < 0) fail('Unknown project: ' + project);
+  var clean = [];
+  (rows || []).forEach(function (r, i) {
+    var code = str(r.code), amount = num(String(r.amount).replace(/,/g, ''));
+    if (!code && !amount) return; // blank line
+    if (!code) fail('Row ' + (i + 2) + ': budget code is missing.');
+    var f = str(r.frequency);
+    if (f && FREQUENCIES.indexOf(f) < 0) fail('Row ' + (i + 2) + ': frequency must be one of ' + FREQUENCIES.join(', '));
+    clean.push({
+      year: year, project: project, code: code, description: str(r.description),
+      group: str(r.group), vendor: str(r.vendor), amount: round2(amount), frequency: f
+    });
+  });
+  if (!clean.length) fail('The file has no budget rows.');
+  STORE.replaceWhere('Budget', function (b) {
+    return String(b.year) === year && b.project === project;
+  }, clean);
+  logEvent(user, '', 'Budget uploaded', '', '', project + ' ' + year + ': ' + clean.length + ' rows');
+  return { rows: clean.length, total: round2(clean.reduce(function (s, r) { return s + r.amount; }, 0)) };
+}
+
+/* ----------------------------------------------------------------- vendors */
+
+function vendorList(project) {
+  var set = {};
+  STORE.readAll('Budget').forEach(function (b) {
+    if ((!project || b.project === project) && str(b.vendor)) set[str(b.vendor)] = true;
+  });
+  STORE.readAll('Vendors').forEach(function (v) { if (str(v.name)) set[str(v.name)] = true; });
+  return Object.keys(set).sort();
+}
+
+function addVendor(user, name) {
+  name = str(name);
+  if (!name) fail('Vendor name is required.');
+  var exists = vendorList().some(function (v) { return v.toLowerCase() === name.toLowerCase(); });
+  if (!exists) STORE.append('Vendors', { name: name, addedBy: user.username, addedAt: nowIso() });
+  return vendorList();
+}
+
+/* ---------------------------------------------------------------- requests */
+
+function logEvent(user, requestId, action, from, to, remark) {
+  STORE.append('Log', {
+    ts: nowIso(), requestId: requestId, user: user.username, userName: user.name,
+    action: action, fromStatus: from, toStatus: to, remark: str(remark)
+  });
+}
+
+function getRequest(id) {
+  var r = STORE.readAll('Requests').filter(function (x) { return x.id === id; })[0];
+  if (!r) fail('Request ' + id + ' not found.');
+  return r;
+}
+
+function setStatus(user, r, to, action, remark, patch) {
+  var from = r.status;
+  patch = patch || {};
+  patch.status = to;
+  patch.statusSince = nowIso();
+  patch.updatedAt = patch.statusSince;
+  if (remark) patch.lastRemark = remark;
+  STORE.update('Requests', 'id', r.id, patch);
+  logEvent(user, r.id, action, from, to, remark);
+}
+
+function periodLabel(r) {
+  var m = num(r.month);
+  return (m ? MONTHS[m - 1] + ' ' : '') + r.year + (r.frequency ? ' · ' + r.frequency : '');
+}
+
+/** Rows for the main table, with budget figures and "days in stage". */
+function listRequests(user) {
+  var reqs = STORE.readAll('Requests');
+  var lines = {};
+  budgetLines().forEach(function (l) { lines[l.key] = l; });
+  var fu = {};
+  STORE.readAll('FollowUps').forEach(function (f) {
+    var x = fu[f.requestId] || (fu[f.requestId] = { count: 0, reminders: 0, last: '' });
+    x.count++;
+    if (f.type === 'Reminder sent') x.reminders++;
+    if (f.date > x.last) x.last = f.date;
+  });
+  var overdueDays = num(getSetting('overdueDays', 15));
+  var now = STORE.now();
+  return reqs.map(function (r) {
+    var l = lines[r.lineKey];
+    var u = lineUsage(r.lineKey, reqs);
+    var since = r.statusSince || r.createdAt;
+    var days = since ? Math.floor(daysBetween(since, now)) : 0;
+    return {
+      id: r.id, createdAt: r.createdAt, project: r.project, vendor: r.vendor, invoiceNo: r.invoiceNo,
+      lineKey: r.lineKey, lineLabel: r.lineLabel, year: r.year, month: r.month, frequency: r.frequency,
+      period: periodLabel(r), total: num(r.total), status: r.status, owner: OWNER[r.status] || '',
+      budget: l ? l.amount : null, balance: l ? round2(l.amount - u.committed) : null,
+      daysInStage: days, overdue: r.status === ST.TO_COLLECT && days >= overdueDays,
+      followUps: fu[r.id] || { count: 0, reminders: 0, last: '' },
+      lastRemark: r.lastRemark || '', returnTo: r.returnTo || '',
+      mine: OWNER[r.status] === user.role
+    };
+  }).sort(function (a, b) { return a.id < b.id ? 1 : -1; });
+}
+
+function requestDetail(user, id) {
+  var r = getRequest(id);
+  var reqs = STORE.readAll('Requests');
+  var line = budgetLines(r.year, r.project).filter(function (l) { return l.key === r.lineKey; })[0];
+  var usage = lineUsage(r.lineKey, reqs, r.id);
+  var log = STORE.readAll('Log').filter(function (x) { return x.requestId === id; });
+  var followUps = STORE.readAll('FollowUps').filter(function (x) { return x.requestId === id; });
+  return {
+    request: Object.assign({}, r, { checks: parseJson(r.checks, {}) }),
+    line: line || null,
+    usage: usage,
+    balanceBefore: line ? round2(line.amount - usage.committed) : null,
+    log: log, timeline: timeline(log, r), followUps: followUps,
+    actions: availableActions(user, r)
+  };
+}
+
+function availableActions(user, r) {
+  var a = [];
+  var s = r.status, role = user.role;
+  if (role === 'AE' && (s === ST.TO_COLLECT || s === ST.RETURNED)) a.push('edit', 'submit');
+  if (role === 'REVIEWER' && s === ST.PENDING_REVIEW) a.push('approve', 'reject');
+  if (role === 'MANAGER' && (s === ST.PENDING_MGR || s === ST.PENDING_BANK_APPROVAL)) a.push('approve', 'reject');
+  if (role === 'AE' && s === ST.PENDING_BANK_INIT) a.push('bankInitiated');
+  if (role === 'AE' && s === ST.WITH_BANK) a.push('markPaid');
+  if (role === 'AE' && s === ST.PENDING_NOBROKER) a.push('nobroker');
+  if (role === 'MANAGER' && [ST.CLOSED, ST.CANCELLED].indexOf(s) < 0) a.push('cancel');
+  if ([ST.CLOSED, ST.CANCELLED].indexOf(s) < 0) a.push('followUp');
+  return a;
+}
+
+/** Time spent in each stage, from the log. */
+function timeline(log, r) {
+  var events = log.filter(function (e) { return e.toStatus; })
+    .sort(function (a, b) { return a.ts < b.ts ? -1 : 1; });
+  var out = [];
+  for (var i = 0; i < events.length; i++) {
+    var e = events[i], next = events[i + 1];
+    out.push({
+      status: e.toStatus, start: e.ts, end: next ? next.ts : '',
+      days: Math.round(daysBetween(e.ts, next ? next.ts : STORE.now()) * 10) / 10,
+      enteredBy: e.userName || e.user, exitedBy: next ? (next.userName || next.user) : '',
+      exitAction: next ? next.action : '', open: !next
+    });
+  }
+  return out;
+}
+
+/**
+ * Create a new request or save/submit an existing To Collect / Returned one.
+ * data: {id?, project, vendor, lineKey, invoiceNo, frequency, month, year, net, vat,
+ *        checks:{}, overBudgetReason, file:{name, mime, base64}?}
+ * submit: true to send it for review, false to just save.
+ */
+function saveRequest(user, data, submit) {
+  requireRole(user, ['AE', 'MANAGER']);
+  var existing = data.id ? getRequest(data.id) : null;
+  if (existing && [ST.TO_COLLECT, ST.RETURNED].indexOf(existing.status) < 0)
+    fail('This request is ' + existing.status + ' and can no longer be edited.');
+
+  var project = str(data.project), vendor = str(data.vendor), year = str(data.year);
+  if (PROJECTS.indexOf(project) < 0) fail('Choose a project.');
+  if (!vendor) fail('Choose a vendor.');
+  var line = budgetLines(year, project).filter(function (l) { return l.key === data.lineKey; })[0];
+  if (!line) fail('Choose a budget code for ' + project + ' ' + year + '.');
+
+  var net = round2(data.net), vat = round2(data.vat), total = round2(net + vat);
+  var checks = {};
+  CHECKS.forEach(function (c) { checks[c.key] = !!(data.checks && data.checks[c.key]); });
+
+  var reqs = STORE.readAll('Requests');
+  var id = existing ? existing.id : nextId('PRF-' + year + '-', reqs, 'id');
+  var invoiceNo = str(data.invoiceNo);
+
+  var patch = {
+    year: year, project: project, vendor: vendor, lineKey: line.key, lineLabel: line.label,
+    codes: line.codes.join(', '), invoiceNo: invoiceNo, frequency: str(data.frequency),
+    month: str(data.month), net: net, vat: vat, total: total, checks: JSON.stringify(checks),
+    overBudgetReason: str(data.overBudgetReason), updatedAt: nowIso()
+  };
+
+  if (submit) {
+    if (!invoiceNo) fail('Invoice number is required.');
+    if (!(total > 0)) fail('Invoice amount must be more than zero.');
+    if (FREQUENCIES.indexOf(patch.frequency) < 0) fail('Choose monthly, quarterly, half-yearly or annual.');
+    if (!(num(patch.month) >= 1 && num(patch.month) <= 12)) fail('Choose the invoice month.');
+    var missing = CHECKS.filter(function (c) { return !checks[c.key]; });
+    if (missing.length) fail('Tick all checks before submitting. Missing: ' + missing.map(function (c) { return c.label; }).join('; '));
+    var dup = reqs.filter(function (r) {
+      return r.id !== id && r.status !== ST.CANCELLED &&
+        str(r.vendor).toLowerCase() === vendor.toLowerCase() &&
+        str(r.invoiceNo).toLowerCase() === invoiceNo.toLowerCase();
+    })[0];
+    if (dup) fail('Invoice ' + invoiceNo + ' from ' + vendor + ' is already on ' + dup.id + '.');
+    var balance = line.amount - lineUsage(line.key, reqs, id).committed;
+    if (total > balance + 0.005 && !patch.overBudgetReason)
+      fail('OVER_BUDGET:' + round2(balance));
+    if (!data.file && !(existing && existing.invoiceFileUrl)) fail('Attach the invoice pack PDF.');
+  }
+
+  if (!existing) {
+    patch.id = id; patch.status = ST.TO_COLLECT; patch.createdBy = user.username;
+    patch.createdAt = nowIso(); patch.statusSince = patch.createdAt;
+  }
+
+  var folder = folderPath(Object.assign({}, existing || {}, patch));
+  if (data.file) {
+    var f = STORE.saveFile(folder, '01 Invoice pack - ' + safeName(invoiceNo || id) + extOf(data.file.name), data.file);
+    patch.invoiceFileUrl = f.url;
+    patch.folderUrl = f.folderUrl;
+  }
+
+  if (existing) STORE.update('Requests', 'id', id, patch);
+  else {
+    STORE.append('Requests', patch);
+    logEvent(user, id, 'Created', '', ST.TO_COLLECT, 'Created manually');
+  }
+
+  if (submit) {
+    var cur = getRequest(id);
+    var to = cur.status === ST.RETURNED && cur.returnTo ? cur.returnTo : ST.PENDING_REVIEW;
+    setStatus(user, cur, to, cur.status === ST.RETURNED ? 'Resubmitted' : 'Submitted',
+      patch.overBudgetReason && total > line.amount - lineUsage(line.key, reqs, id).committed
+        ? 'Over budget: ' + patch.overBudgetReason : '',
+      { submittedAt: cur.submittedAt || nowIso(), returnTo: '' });
+  }
+  return id;
+}
+
+function folderPath(r) {
+  return [r.project, r.id + ' - ' + safeName(r.vendor) + (r.invoiceNo ? ' - ' + safeName(r.invoiceNo) : '')];
+}
+function safeName(s) { return str(s).replace(/[\\/:*?"<>|#]/g, '-').slice(0, 60); }
+function extOf(name) { var m = str(name).match(/\.[A-Za-z0-9]{1,5}$/); return m ? m[0] : ''; }
+
+function approve(user, id, remark) {
+  var r = getRequest(id);
+  if (r.status === ST.PENDING_REVIEW) {
+    requireRole(user, ['REVIEWER']);
+    setStatus(user, r, ST.PENDING_MGR, 'Reviewed & approved', remark);
+  } else if (r.status === ST.PENDING_MGR) {
+    requireRole(user, ['MANAGER']);
+    setStatus(user, r, ST.PENDING_BANK_INIT, 'Manager approved', remark);
+  } else if (r.status === ST.PENDING_BANK_APPROVAL) {
+    requireRole(user, ['MANAGER']);
+    setStatus(user, r, ST.WITH_BANK, 'Approved on bank portal', remark);
+  } else fail(id + ' is ' + r.status + '; nothing to approve.');
+  return true;
+}
+
+function bulkApprove(user, ids, remark) {
+  var done = [], errors = [];
+  (ids || []).forEach(function (id) {
+    try { approve(user, id, remark); done.push(id); } catch (e) { errors.push(id + ': ' + e.message); }
+  });
+  return { done: done, errors: errors };
+}
+
+function reject(user, id, remark) {
+  remark = str(remark);
+  if (!remark) fail('Write a remark so the accounts executive knows what to fix.');
+  var r = getRequest(id);
+  var allowed = { };
+  allowed[ST.PENDING_REVIEW] = 'REVIEWER';
+  allowed[ST.PENDING_MGR] = 'MANAGER';
+  allowed[ST.PENDING_BANK_APPROVAL] = 'MANAGER';
+  if (!allowed[r.status]) fail(id + ' is ' + r.status + '; it cannot be rejected now.');
+  requireRole(user, [allowed[r.status]]);
+  // Rejected on the bank portal: the AE re-initiates in the bank, so it goes
+  // back to "Pending Bank Initiation" rather than to the start.
+  var back = r.status === ST.PENDING_BANK_APPROVAL ? ST.PENDING_BANK_INIT : ST.RETURNED;
+  setStatus(user, r, back, 'Rejected', remark, { returnTo: back === ST.RETURNED ? r.status : '' });
+  return true;
+}
+
+function bankInitiated(user, id, bankRef) {
+  requireRole(user, ['AE']);
+  var r = getRequest(id);
+  if (r.status !== ST.PENDING_BANK_INIT) fail(id + ' is ' + r.status + '.');
+  setStatus(user, r, ST.PENDING_BANK_APPROVAL, 'Initiated in bank', bankRef ? 'Bank ref: ' + bankRef : '',
+    { bankRef: str(bankRef) });
+  return true;
+}
+
+function markPaid(user, id, paidDate, file) {
+  requireRole(user, ['AE']);
+  var r = getRequest(id);
+  if (r.status !== ST.WITH_BANK) fail(id + ' is ' + r.status + '.');
+  if (!str(paidDate)) fail('Enter the payment date.');
+  if (!file) fail('Attach the bank payment proof.');
+  var f = STORE.saveFile(folderPath(r), '02 Payment proof' + extOf(file.name), file);
+  setStatus(user, r, ST.PENDING_NOBROKER, 'Paid by bank', 'Paid on ' + paidDate,
+    { paidDate: str(paidDate), proofFileUrl: f.url, folderUrl: r.folderUrl || f.folderUrl });
+  return true;
+}
+
+function nobrokerUpdated(user, id) {
+  requireRole(user, ['AE']);
+  var r = getRequest(id);
+  if (r.status !== ST.PENDING_NOBROKER) fail(id + ' is ' + r.status + '.');
+  setStatus(user, r, ST.CLOSED, 'Updated in NoBroker', '');
+  return true;
+}
+
+function cancelRequest(user, id, remark) {
+  requireRole(user, ['MANAGER']);
+  if (!str(remark)) fail('Give a reason for cancelling.');
+  var r = getRequest(id);
+  if ([ST.CLOSED, ST.CANCELLED].indexOf(r.status) >= 0) fail(id + ' is already ' + r.status + '.');
+  setStatus(user, r, ST.CANCELLED, 'Cancelled', remark);
+  return true;
+}
+
+function addFollowUp(user, id, data) {
+  var r = getRequest(id);
+  var type = FOLLOWUP_TYPES.indexOf(data.type) >= 0 ? data.type : 'Other';
+  if (!str(data.date)) fail('Enter the date.');
+  var url = '';
+  if (data.file) {
+    var n = STORE.readAll('FollowUps').filter(function (f) { return f.requestId === id; }).length + 1;
+    var path = folderPath(r).concat(['Correspondence']);
+    url = STORE.saveFile(path, String(n).padStart(2, '0') + ' ' + data.date + ' ' + type + extOf(data.file.name), data.file).url;
+  }
+  STORE.append('FollowUps', {
+    ts: nowIso(), requestId: id, user: user.username, userName: user.name,
+    type: type, date: str(data.date), remark: str(data.remark), fileUrl: url
+  });
+  STORE.update('Requests', 'id', id, { updatedAt: nowIso() });
+  return true;
+}
+
+/* --------------------------------------------------------------- schedules */
+
+/** Default collection frequency from the budget description. */
+function defaultFrequency(text) {
+  var t = str(text).toLowerCase();
+  if (/master\s*community/.test(t)) return 'Quarterly';
+  if (/civil\s*defen|\bdcd\b|\btcd\b/.test(t)) return 'Annual';
+  if (/\brera\b/.test(t)) return 'Annual';
+  if (/pest/.test(t) || /waste|garbage/.test(t)) return 'Monthly';
+  if (/water\s*tank/.test(t) || /fa[cç]ade/.test(t)) return 'Half-yearly';
+  return 'Quarterly';
+}
+
+function listSchedules() {
+  return STORE.readAll('Schedules').sort(function (a, b) {
+    return (a.project + a.lineLabel) < (b.project + b.lineLabel) ? -1 : 1;
+  });
+}
+
+function saveSchedule(user, s) {
+  requireRole(user, ['MANAGER', 'AE']);
+  var line = budgetLines(s.year, s.project).filter(function (l) { return l.key === s.lineKey; })[0];
+  if (!line) fail('Choose a budget code.');
+  if (FREQUENCIES.indexOf(s.frequency) < 0) fail('Choose a frequency.');
+  var row = {
+    year: str(s.year), project: s.project, vendor: str(s.vendor) || line.vendors[0] || '',
+    lineKey: line.key, lineLabel: line.label, frequency: s.frequency,
+    startMonth: str(s.startMonth || 1), active: s.active === false ? 'FALSE' : 'TRUE'
+  };
+  if (s.id) STORE.update('Schedules', 'id', s.id, row);
+  else {
+    row.id = nextId('SCH-', STORE.readAll('Schedules'), 'id');
+    row.createdBy = user.username; row.createdAt = nowIso();
+    STORE.append('Schedules', row);
+  }
+  return true;
+}
+
+function schedulesFromBudget(user, year, project) {
+  requireRole(user, ['MANAGER']);
+  var existing = {};
+  STORE.readAll('Schedules').forEach(function (s) { existing[s.lineKey] = true; });
+  var made = 0;
+  var projects = project ? [project] : PROJECTS;
+  projects.forEach(function (p) {
+    budgetLines(year, p).forEach(function (l) {
+      if (existing[l.key]) return;
+      saveSchedule(user, {
+        year: year, project: p, lineKey: l.key, vendor: l.vendors[0] || '',
+        frequency: l.frequency || defaultFrequency(l.descriptions.join(' ') + ' ' + l.group),
+        startMonth: 1
+      });
+      made++;
+    });
+  });
+  return made;
+}
+
+/** Period that `date` falls in, for a frequency. month = month the invoice is for. */
+function periodFor(freq, date) {
+  var y = date.getFullYear(), m = date.getMonth() + 1;
+  if (freq === 'Monthly') return { key: y + '-M' + m, start: m, month: m };
+  if (freq === 'Quarterly') { var q = Math.ceil(m / 3); return { key: y + '-Q' + q, start: q * 3 - 2, month: q * 3 }; }
+  if (freq === 'Half-yearly') { var h = m <= 6 ? 1 : 2; return { key: y + '-H' + h, start: h * 6 - 5, month: h * 6 }; }
+  return { key: y + '-Y', start: 1, month: 12 };
+}
+
+/**
+ * Create "To Collect" lines for every active schedule whose current period
+ * has started and has no line yet. Runs daily from a trigger; safe to re-run.
+ */
+function generateDue(sysUser) {
+  var today = STORE.now();
+  var reqs = STORE.readAll('Requests');
+  var have = {};
+  reqs.forEach(function (r) { if (r.scheduleId) have[r.scheduleId + '|' + r.periodKey] = true; });
+  var made = [];
+  STORE.readAll('Schedules').forEach(function (s) {
+    if (str(s.active) === 'FALSE') return;
+    if (String(today.getFullYear()) !== String(s.year)) return;
+    var p = periodFor(s.frequency, today);
+    if (p.month < num(s.startMonth || 1)) return;
+    if (have[s.id + '|' + p.key]) return;
+    var id = nextId('PRF-' + s.year + '-', reqs, 'id');
+    var row = {
+      id: id, year: String(s.year), project: s.project, vendor: s.vendor, lineKey: s.lineKey,
+      lineLabel: s.lineLabel, frequency: s.frequency, month: String(p.month), invoiceNo: '',
+      net: 0, vat: 0, total: 0, checks: '{}', status: ST.TO_COLLECT, scheduleId: s.id, periodKey: p.key,
+      createdBy: 'system', createdAt: nowIso(), statusSince: nowIso(), updatedAt: nowIso()
+    };
+    STORE.append('Requests', row);
+    reqs.push(row);
+    have[s.id + '|' + p.key] = true;
+    logEvent(sysUser, id, 'Scheduled', '', ST.TO_COLLECT, 'From schedule ' + s.id + ' (' + p.key + ')');
+    made.push(id);
+  });
+  return made;
+}
+
+/* ----------------------------------------------------------------- reports */
+
+/** How long each person took on the steps they completed. */
+function performanceReport() {
+  var log = STORE.readAll('Log').filter(function (e) { return e.requestId && e.toStatus; })
+    .sort(function (a, b) { return a.ts < b.ts ? -1 : 1; });
+  var byReq = {};
+  log.forEach(function (e) { (byReq[e.requestId] = byReq[e.requestId] || []).push(e); });
+  var people = {}, stages = {};
+  var now = STORE.now();
+  Object.keys(byReq).forEach(function (id) {
+    var ev = byReq[id];
+    for (var i = 0; i < ev.length; i++) {
+      var e = ev[i], next = ev[i + 1];
+      var d = daysBetween(e.ts, next ? next.ts : now);
+      var st = stages[e.toStatus] || (stages[e.toStatus] = { status: e.toStatus, done: 0, totalDays: 0, open: 0, openDays: 0 });
+      if (next) {
+        st.done++; st.totalDays += d;
+        var who = next.userName || next.user;
+        var p = people[who] || (people[who] = { person: who, steps: 0, totalDays: 0, maxDays: 0, rejections: 0 });
+        p.steps++; p.totalDays += d; p.maxDays = Math.max(p.maxDays, d);
+        if (next.action === 'Rejected') p.rejections++;
+      } else if ([ST.CLOSED, ST.CANCELLED].indexOf(e.toStatus) < 0) {
+        st.open++; st.openDays = Math.max(st.openDays, d);
+      }
+    }
+  });
+  function fin(o) {
+    o.avgDays = o.steps || o.done ? Math.round(o.totalDays / (o.steps || o.done) * 10) / 10 : 0;
+    if (o.maxDays != null) o.maxDays = Math.round(o.maxDays * 10) / 10;
+    if (o.openDays != null) o.openDays = Math.round(o.openDays * 10) / 10;
+    delete o.totalDays;
+    return o;
+  }
+  return {
+    people: Object.keys(people).map(function (k) { return fin(people[k]); }),
+    stages: Object.keys(stages).map(function (k) { return fin(stages[k]); })
+  };
+}
+
+/* ---------------------------------------------------------------- settings */
+
+function getSetting(key, dflt) {
+  var s = STORE.readAll('Settings').filter(function (x) { return x.key === key; })[0];
+  return s && str(s.value) !== '' ? s.value : dflt;
+}
+
+/* -------------------------------------------------------------- dispatcher */
+
+/** Single entry point the web page calls. */
+function handle(token, action, p) {
+  p = p || {};
+  if (action === 'login') return login(p.username, p.password);
+  var user = userFromToken(token);
+  switch (action) {
+    case 'bootstrap':
+      return {
+        user: publicUser(user), projects: PROJECTS, checks: CHECKS, frequencies: FREQUENCIES,
+        months: MONTHS, statuses: ST, owners: OWNER, followUpTypes: FOLLOWUP_TYPES,
+        vendors: vendorList(), today: nowIso(), currentYear: String(STORE.now().getFullYear())
+      };
+    case 'logout': return logout(token);
+    case 'changePassword': return changePassword(user, p.oldPw, p.newPw);
+    case 'listRequests': return listRequests(user);
+    case 'requestDetail': return requestDetail(user, p.id);
+    case 'budgetLines': return budgetSummary(p.year, p.project);
+    case 'vendors': return vendorList(p.project);
+    case 'addVendor': return addVendor(user, p.name);
+    case 'saveRequest': return saveRequest(user, p.data, !!p.submit);
+    case 'approve': return approve(user, p.id, p.remark);
+    case 'bulkApprove': return bulkApprove(user, p.ids, p.remark);
+    case 'reject': return reject(user, p.id, p.remark);
+    case 'bankInitiated': return bankInitiated(user, p.id, p.bankRef);
+    case 'markPaid': return markPaid(user, p.id, p.paidDate, p.file);
+    case 'nobroker': return nobrokerUpdated(user, p.id);
+    case 'cancel': return cancelRequest(user, p.id, p.remark);
+    case 'addFollowUp': return addFollowUp(user, p.id, p.data || {});
+    case 'listSchedules': return listSchedules();
+    case 'saveSchedule': return saveSchedule(user, p.schedule || {});
+    case 'schedulesFromBudget': return schedulesFromBudget(user, p.year, p.project);
+    case 'generateDue': requireRole(user, ['MANAGER', 'AE']); return generateDue(user);
+    case 'uploadBudget': return uploadBudget(user, p.year, p.project, p.rows);
+    case 'report': return performanceReport();
+  }
+  fail('Unknown action: ' + action);
+}
+
+</script>
+<script>
+/* In-browser stand-in for Server.gs so the portal can be tried without Google.
+   Data lives in memory (and localStorage, so a refresh keeps it). */
+(function () {
+  var KEY = 'prfPreviewDb_v1';
+  var db;
+  try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { db = null; }
+  var cache = {};
+  var clockOffset = 0; // preview can fast-forward time
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
+  function h(s) { var x = 5381; for (var i = 0; i < s.length; i++) x = ((x << 5) + x + s.charCodeAt(i)) >>> 0; return 'h' + x.toString(16); }
+
+  window.STORE = {
+    now: function () { return new Date(Date.now() + clockOffset); },
+    readAll: function (n) { return (db[n] || []).map(function (r) { return Object.assign({}, r); }); },
+    append: function (n, o) {
+      var r = {}; Object.keys(o).forEach(function (k) { r[k] = o[k] == null ? '' : String(o[k]); });
+      (db[n] = db[n] || []).push(r); persist();
+    },
+    update: function (n, k, v, patch) {
+      var r = (db[n] || []).filter(function (x) { return String(x[k]) === String(v); })[0];
+      if (!r) throw new Error(n + ' ' + v + ' not found');
+      Object.keys(patch).forEach(function (f) { r[f] = patch[f] == null ? '' : String(patch[f]); }); persist();
+    },
+    replaceWhere: function (n, pred, rows) {
+      db[n] = (db[n] || []).filter(function (x) { return !pred(x); });
+      rows.forEach(function (r) { STORE.append(n, r); }); persist();
+    },
+    saveFile: function (path, name, file) {
+      var url = 'data:' + (file.mime || 'application/pdf') + ';base64,' + file.base64;
+      return { url: file.base64.length < 2000000 ? url : '#preview-file-' + encodeURIComponent(name), folderUrl: '#PRF Portal/' + path.slice(0, 2).join('/') };
+    },
+    hash: h,
+    newToken: function () { return Math.random().toString(36).slice(2) + Date.now().toString(36); },
+    cachePut: function (k, v) { cache[k] = v; try { sessionStorage.setItem(k, v); } catch (e) {} },
+    cacheGet: function (k) { if (cache[k]) return cache[k]; try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    cacheRemove: function (k) { delete cache[k]; try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+
+  function seed() {
+    db = { Users: [], Budget: [], Vendors: [], Requests: [], Log: [], FollowUps: [], Schedules: [], Settings: [{ key: 'overdueDays', value: '15' }] };
+    [['minhas', 'Mr. Minhas', 'AE'], ['ihtisham', 'Muhammad Ihtisham', 'REVIEWER'], ['shabir', 'Shabir', 'MANAGER'], ['osama', 'Osama', 'MANAGER']]
+      .forEach(function (u) { db.Users.push({ username: u[0], name: u[1], role: u[2], salt: 's', passHash: h('s' + 'demo'), active: 'TRUE' }); });
+    // SAMPLE budget only — replace by uploading the real 2026 budgets.
+    var sample = [
+      ['01-001', 'Cleaning services', 180000, 'Kawthar Al Khair', 'Cleaning & Maintenance', 'Monthly'],
+      ['01-002', 'MEP / general maintenance', 144000, 'IMB Technical Services', 'Cleaning & Maintenance', 'Monthly'],
+      ['02-001', 'Master community service charge', 96000, 'Master Community', '', ''],
+      ['03-001', 'Civil Defence (DCD) annual fee', 8500, 'Dubai Civil Defence', '', ''],
+      ['03-002', 'RERA fee', 12000, 'RERA', '', ''],
+      ['04-001', 'Pest control', 7200, 'Green Pest Services', '', ''],
+      ['04-002', 'Waste collection', 30000, 'Clean City Waste', '', ''],
+      ['05-001', 'Water tank cleaning', 6000, 'AquaCare', '', ''],
+      ['05-002', 'Facade cleaning', 24000, 'Skyline Facade', '', ''],
+      ['06-001', 'CCTV maintenance', 16000, 'SecureVision', '', ''],
+      ['07-001', 'District cooling', 420000, 'Empower', '', 'Monthly']
+    ];
+    PROJECTS.forEach(function (p, i) {
+      sample.forEach(function (s) {
+        var vendor = s[3];
+        if (p === 'Equiti Residence' && s[4]) vendor = 'SPS Max';
+        db.Budget.push({ year: '2026', project: p, code: s[0], description: s[1], group: s[4], vendor: vendor,
+          amount: String(Math.round(s[2] * (0.8 + i * 0.07))), frequency: s[5] });
+      });
+    });
+    persist();
+  }
+  if (!db) seed();
+
+  function demoFlow() {
+    // A few requests at different stages so every screen has something on it.
+    var u = {}; db.Users.forEach(function (x) { u[x.username] = x; });
+    var allChecks = {}; CHECKS.forEach(function (c) { allChecks[c.key] = true; });
+    var pdf = { name: 'invoice.pdf', mime: 'application/pdf', base64: 'JVBERi0xLjQKJcfsj6IKMSAwIG9iago8PC9UeXBlL0NhdGFsb2c+PgplbmRvYmoKdHJhaWxlcgo8PC9Sb290IDEgMCBSPj4KJSVFT0YK' };
+    function line(p, code) { return budgetLines('2026', p).filter(function (l) { return l.codes.indexOf(code) >= 0; })[0]; }
+    function mk(p, code, vendor, inv, month, net, freq) {
+      return saveRequest(u.minhas, { project: p, year: '2026', vendor: vendor, lineKey: line(p, code).key, invoiceNo: inv,
+        frequency: freq, month: String(month), net: net, vat: Math.round(net * 5) / 100, checks: allChecks, file: pdf }, true);
+    }
+    clockOffset = -20 * 86400000;
+    var a = mk('SIT Tower', '01-001', 'Kawthar Al Khair', 'KAK-2026-1041', 10, 26000, 'Monthly');
+    var b = mk('BNH Tower 03', '03-001', 'Dubai Civil Defence', 'DCD-88412', 12, 8000, 'Annual');
+    var c = mk('Equiti Residence', '01-001', 'SPS Max', 'SPS-7781', 10, 22500, 'Monthly');
+    var e = mk('Equiti Arcade', '06-001', 'SecureVision', 'SV-Q3-221', 9, 4200, 'Quarterly');
+    clockOffset = -16 * 86400000; approve(u.ihtisham, a, ''); approve(u.ihtisham, b, ''); approve(u.ihtisham, c, ''); approve(u.ihtisham, e, '');
+    clockOffset = -14 * 86400000; approve(u.shabir, a, ''); approve(u.osama, b, ''); approve(u.osama, e, '');
+    clockOffset = -13 * 86400000; bankInitiated(u.minhas, a, 'ENBD-55120'); bankInitiated(u.minhas, b, 'ENBD-55121'); bankInitiated(u.minhas, e, 'ENBD-55122');
+    clockOffset = -11 * 86400000; approve(u.shabir, a, ''); approve(u.shabir, e, '');
+    clockOffset = -9 * 86400000; markPaid(u.minhas, a, '2026-11-10', pdf);
+    clockOffset = -8 * 86400000; nobrokerUpdated(u.minhas, a);
+    clockOffset = -6 * 86400000;
+    var f = mk('Al Falak Residence', '04-001', 'Green Pest Services', 'GPS-1120', 11, 600, 'Monthly');
+    clockOffset = -4 * 86400000; reject(u.ihtisham, f, 'Service report is not stamped by the building. Please get it stamped and re-attach.');
+    clockOffset = -2 * 86400000;
+    mk('BNH Smart Tower', '04-002', 'Clean City Waste', 'CCW-3390', 11, 2600, 'Monthly');
+    mk('Equiti Apartments', '01-001', 'Kawthar Al Khair', 'KAK-2026-1102', 11, 21000, 'Monthly');
+    clockOffset = -25 * 86400000;
+    schedulesFromBudget(u.osama, '2026', 'SIT Tower');
+    schedulesFromBudget(u.osama, '2026', 'Equiti Arcade');
+    generateDue({ username: 'system', name: 'System' });
+    var tc = db.Requests.filter(function (r) { return r.status === ST.TO_COLLECT && r.project === 'SIT Tower' && /CCTV/.test(r.lineLabel); })[0];
+    clockOffset = -12 * 86400000;
+    if (tc) addFollowUp(u.minhas, tc.id, { type: 'Reminder sent', date: '2026-11-07', remark: 'Emailed SecureVision for Q4 CCTV invoice' });
+    clockOffset = -5 * 86400000;
+    if (tc) addFollowUp(u.minhas, tc.id, { type: 'Reminder sent', date: '2026-11-14', remark: 'Second reminder, asked to send by 20 Nov' });
+    clockOffset = 0;
+    db.demo = true; persist();
+  }
+  if (!db.demo) demoFlow();
+
+  // google.script.run shim
+  function runner(ok, bad) {
+    return new Proxy({}, {
+      get: function (t, name) {
+        if (name === 'withSuccessHandler') return function (f) { return runner(f, bad); };
+        if (name === 'withFailureHandler') return function (f) { return runner(ok, f); };
+        return function (token, action, payload) {
+          setTimeout(function () {
+            var r;
+            try { r = handle(token, action, payload); r = r === undefined ? null : JSON.parse(JSON.stringify(r)); }
+            catch (e) { return bad && bad(e); }
+            ok && ok(r);
+          }, 60);
+        };
+      }
+    });
+  }
+  window.google = { script: { run: runner() } };
+  window.PRF_PREVIEW = { reset: function () { localStorage.removeItem(KEY); sessionStorage.clear(); location.reload(); } };
+})();
+
+</script>
+<script>
+/* ============================================================ plumbing */
+var TOKEN = null, B = null, REQS = [], SCHEDS = [], SEL = {};
+try { TOKEN = sessionStorage.getItem('prfToken'); } catch (e) {}
+
+function call(action, payload) {
+  busy(1);
+  return new Promise(function (res, rej) {
+    google.script.run
+      .withSuccessHandler(function (r) { busy(-1); res(r); })
+      .withFailureHandler(function (e) {
+        busy(-1);
+        var msg = (e && e.message) || String(e);
+        if (/SESSION_EXPIRED/.test(msg)) { showLogin('Your session has ended. Please log in again.'); }
+        rej(new Error(msg.replace(/^Error:\s*/, '')));
+      })
+      .api(TOKEN, action, payload || {});
+  });
+}
+var _busy = 0;
+function busy(d) { _busy += d; $('busy').classList.toggle('hidden', _busy <= 0); }
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function aed(n) { return n == null || n === '' ? '' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function d(s) { if (!s) return ''; var x = new Date(s); return isNaN(x) ? s : x.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+function dt(s) { if (!s) return ''; var x = new Date(s); return isNaN(x) ? s : x.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+function today() { var x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); }
+function toast(m) { var t = $('toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.add('hidden'); }, 2600); }
+function opts(list, sel, blank) {
+  return (blank != null ? '<option value="">' + esc(blank) + '</option>' : '') +
+    list.map(function (o) { var v = typeof o === 'object' ? o.v : o, l = typeof o === 'object' ? o.l : o;
+      return '<option value="' + esc(v) + '"' + (String(v) === String(sel) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('');
+}
+function readFile(input) {
+  var f = input && input.files && input.files[0];
+  if (!f) return Promise.resolve(null);
+  if (f.size > 40 * 1024 * 1024) return Promise.reject(new Error('File is larger than 40 MB.'));
+  return new Promise(function (res, rej) {
+    var r = new FileReader();
+    r.onload = function () { res({ name: f.name, mime: f.type || 'application/pdf', base64: String(r.result).split(',')[1] }); };
+    r.onerror = function () { rej(new Error('Could not read the file.')); };
+    r.readAsDataURL(f);
+  });
+}
+function showErr(el, e) { el.textContent = e.message || e; el.classList.remove('hidden'); el.scrollIntoView({ block: 'nearest' }); }
+function years() { var y = Number(B.currentYear); return [y - 1, y, y + 1].map(String); }
+function isMgr() { return B.user.role === 'MANAGER'; }
+
+/* ============================================================ login */
+function showLogin(msg) {
+  TOKEN = null; try { sessionStorage.removeItem('prfToken'); } catch (e) {}
+  $('app').classList.add('hidden'); $('login').classList.remove('hidden'); closeDrawer();
+  $('loginErr').classList.toggle('hidden', !msg); $('loginErr').textContent = msg || '';
+}
+function doLogin(ev) {
+  ev.preventDefault();
+  call('login', { username: $('lu').value, password: $('lp').value }).then(function (r) {
+    TOKEN = r.token; try { sessionStorage.setItem('prfToken', TOKEN); } catch (e) {}
+    $('lp').value = '';
+    start();
+  }).catch(function (e) { showErr($('loginErr'), e); });
+}
+function doLogout() { call('logout').finally(function () { showLogin(); }); }
+
+function start() {
+  call('bootstrap').then(function (b) {
+    B = b;
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    $('meName').textContent = b.user.name; $('meRole').textContent = b.user.roleLabel; $('meRole').className = 'pill ' + b.user.role;
+    document.querySelectorAll('.mgr').forEach(function (e) { e.classList.toggle('hidden', !isMgr()); });
+    $('newBtn').classList.toggle('hidden', ['AE', 'MANAGER'].indexOf(b.user.role) < 0);
+    var allYears = [{ v: '', l: 'All years' }].concat(years());
+    $('fYear').innerHTML = opts(allYears, b.currentYear);
+    $('sYear').innerHTML = opts(years(), b.currentYear);
+    $('bYear').innerHTML = opts(years(), b.currentYear);
+    $('fProject').innerHTML = opts(b.projects, '', 'All projects');
+    $('sProject').innerHTML = opts(b.projects, '', 'All projects');
+    $('bProject').innerHTML = opts(b.projects, b.projects[0]);
+    $('fVendor').innerHTML = opts(b.vendors, '', 'All vendors');
+    var sts = Object.keys(b.statuses).map(function (k) { return b.statuses[k]; });
+    $('fStatus').innerHTML = opts(sts, '', 'All statuses');
+    $('fMine').checked = true;
+    loadRequests();
+  }).catch(function (e) { if (!/session/i.test(e.message)) showLogin(e.message); });
+}
+
+/* ============================================================ tabs */
+document.querySelectorAll('#tabs button').forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    ['requests', 'schedules', 'budget', 'reports'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab); });
+    ({ requests: loadRequests, schedules: loadSchedules, budget: loadBudget, reports: loadReports })[b.dataset.tab]();
+  };
+});
+
+/* ============================================================ requests */
+['fYear', 'fProject', 'fVendor', 'fStatus', 'fMine'].forEach(function (id) { $(id).onchange = renderRequests; });
+$('fInvoice').oninput = renderRequests;
+
+function loadRequests() {
+  return call('listRequests').then(function (r) { REQS = r; renderRequests(); });
+}
+
+function filtered() {
+  var y = $('fYear').value, p = $('fProject').value, v = $('fVendor').value, s = $('fStatus').value,
+    q = $('fInvoice').value.trim().toLowerCase(), mine = $('fMine').checked;
+  return REQS.filter(function (r) {
+    return (!y || r.year === y) && (!p || r.project === p) && (!v || r.vendor === v) && (!s || r.status === s) &&
+      (!mine || r.mine) && (!q || String(r.invoiceNo).toLowerCase().indexOf(q) >= 0 || r.id.toLowerCase().indexOf(q) >= 0);
+  });
+}
+
+var CAN_BULK = null;
+function renderRequests() {
+  var S = B.statuses;
+  CAN_BULK = isMgr() ? [S.PENDING_MGR, S.PENDING_BANK_APPROVAL] : [];
+  var rows = filtered();
+  var mine = REQS.filter(function (r) { return r.mine; });
+  var bank = REQS.filter(function (r) { return r.status === S.PENDING_BANK_APPROVAL; });
+  var mgr = REQS.filter(function (r) { return r.status === S.PENDING_MGR; });
+  var toCollect = REQS.filter(function (r) { return r.status === S.TO_COLLECT; });
+  var late = toCollect.filter(function (r) { return r.overdue; });
+  var sum = function (a) { return a.reduce(function (s, r) { return s + r.total; }, 0); };
+  var chips = [
+    ['mine', 'Pending on me', mine.length, ''],
+    ['status:' + S.TO_COLLECT, 'To collect', toCollect.length, late.length ? late.length + ' overdue' : ''],
+    ['status:' + S.PENDING_REVIEW, 'Pending review', REQS.filter(function (r) { return r.status === S.PENDING_REVIEW; }).length, ''],
+    ['status:' + S.PENDING_MGR, 'Manager approval', mgr.length, 'AED ' + aed(sum(mgr))],
+    ['status:' + S.PENDING_BANK_APPROVAL, 'To approve on bank portal', bank.length, 'AED ' + aed(sum(bank))],
+    ['status:' + S.RETURNED, 'Returned', REQS.filter(function (r) { return r.status === S.RETURNED; }).length, '']
+  ];
+  $('chips').innerHTML = chips.map(function (c) {
+    var on = c[0] === 'mine' ? $('fMine').checked && !$('fStatus').value : $('fStatus').value === c[0].slice(7) && !$('fMine').checked;
+    return '<span class="chip' + (on ? ' on' : '') + '" data-k="' + esc(c[0]) + '">' + esc(c[1]) + ' <b>' + c[2] + '</b>' + (c[3] ? ' <span class="muted">· ' + esc(c[3]) + '</span>' : '') + '</span>';
+  }).join('');
+  document.querySelectorAll('#chips .chip').forEach(function (el) {
+    el.onclick = function () {
+      var k = el.dataset.k;
+      if (k === 'mine') { $('fMine').checked = true; $('fStatus').value = ''; }
+      else { $('fMine').checked = false; $('fStatus').value = k.slice(7); }
+      renderRequests();
+    };
+  });
+
+  var bulkable = rows.filter(function (r) { return CAN_BULK.indexOf(r.status) >= 0; });
+  Object.keys(SEL).forEach(function (id) { if (!bulkable.some(function (r) { return r.id === id; })) delete SEL[id]; });
+  var allSel = bulkable.length && bulkable.every(function (r) { return SEL[r.id]; });
+  $('selHead').innerHTML = bulkable.length ? '<input type="checkbox" id="selAll" title="Select all"' + (allSel ? ' checked' : '') + '>' : '';
+  if ($('selAll')) $('selAll').onchange = function () {
+    var on = $('selAll').checked;
+    bulkable.forEach(function (r) { if (on) SEL[r.id] = true; else delete SEL[r.id]; });
+    renderRequests();
+  };
+
+  $('reqBody').innerHTML = rows.length ? rows.map(function (r) {
+    var cls = r.owner ? r.owner : (r.status === S.CLOSED ? 'done' : '');
+    if (r.status === S.RETURNED) cls = 'ret';
+    var who = r.owner === 'AE' ? 'Accounts' : r.owner === 'REVIEWER' ? 'Reviewer' : r.owner === 'MANAGER' ? 'Manager' : '';
+    var daysCls = r.overdue ? 'late' : r.daysInStage >= 5 && r.owner ? 'warn' : '';
+    var fu = r.followUps.count ? (r.followUps.reminders ? 'Reminders: ' + r.followUps.reminders : r.followUps.count + ' note(s)') + ' · ' + d(r.followUps.last) : '';
+    var box = CAN_BULK.indexOf(r.status) >= 0 ? '<input type="checkbox" data-sel="' + esc(r.id) + '"' + (SEL[r.id] ? ' checked' : '') + '>' : '';
+    return '<tr data-id="' + esc(r.id) + '" class="' + (SEL[r.id] ? 'sel' : '') + '">' +
+      '<td onclick="event.stopPropagation()">' + box + '</td>' +
+      '<td><b>' + esc(r.id) + '</b></td><td>' + d(r.createdAt) + '</td><td>' + esc(r.project) + '</td><td>' + esc(r.vendor) + '</td>' +
+      '<td>' + (r.invoiceNo ? esc(r.invoiceNo) : '<span class="muted">—</span>') + '</td>' +
+      '<td class="wrap">' + esc(r.lineLabel) + '</td><td>' + esc(r.period) + '</td>' +
+      '<td class="num">' + (r.total ? aed(r.total) : '') + '</td><td class="num">' + aed(r.budget) + '</td>' +
+      '<td class="num' + (r.balance < 0 ? ' neg' : '') + '">' + aed(r.balance) + '</td>' +
+      '<td><span class="pill ' + cls + '">' + esc(r.status) + '</span>' + (r.status === S.RETURNED && r.lastRemark ? '<div class="muted" style="white-space:normal;max-width:220px">' + esc(r.lastRemark) + '</div>' : '') + '</td>' +
+      '<td>' + who + '</td><td class="num ' + daysCls + '">' + (r.owner ? r.daysInStage : '') + '</td><td>' + esc(fu) + '</td></tr>';
+  }).join('') : '<tr><td colspan="15" class="empty">' + ($('fMine').checked ? 'Nothing is waiting on you. Untick "Pending on me" to see everything.' : 'No requests match these filters.') + '</td></tr>';
+
+  document.querySelectorAll('#reqBody tr[data-id]').forEach(function (tr) { tr.onclick = function () { openRequest(tr.dataset.id); }; });
+  document.querySelectorAll('#reqBody [data-sel]').forEach(function (cb) {
+    cb.onchange = function () { if (cb.checked) SEL[cb.dataset.sel] = true; else delete SEL[cb.dataset.sel]; renderRequests(); };
+  });
+  var n = Object.keys(SEL).length;
+  var tot = REQS.filter(function (r) { return SEL[r.id]; }).reduce(function (s, r) { return s + r.total; }, 0);
+  $('bulkBtn').classList.toggle('hidden', !n);
+  $('bulkBtn').textContent = 'Approve selected (' + n + ' · AED ' + aed(tot) + ')';
+}
+
+function approveSelected() {
+  var ids = Object.keys(SEL);
+  if (!ids.length || !confirm('Approve ' + ids.length + ' request(s)?')) return;
+  call('bulkApprove', { ids: ids }).then(function (r) {
+    SEL = {};
+    toast(r.done.length + ' approved' + (r.errors.length ? ', ' + r.errors.length + ' failed' : ''));
+    if (r.errors.length) alert(r.errors.join('\n'));
+    loadRequests();
+  }).catch(function (e) { alert(e.message); });
+}
+
+/* ============================================================ drawer */
+function openDrawer(title, statusHtml, body) {
+  $('dTitle').textContent = title; $('dStatus').innerHTML = statusHtml || '';
+  $('dBody').innerHTML = body;
+  $('drawer').classList.remove('hidden'); $('scrim').classList.remove('hidden');
+  $('dBody').scrollTop = 0;
+}
+function closeDrawer() { $('drawer').classList.add('hidden'); $('scrim').classList.add('hidden'); }
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+
+function statusPill(r) {
+  var S = B.statuses, o = B.owners[r.status];
+  var cls = r.status === S.RETURNED ? 'ret' : o ? o : r.status === S.CLOSED ? 'done' : '';
+  return '<span class="pill ' + cls + '">' + esc(r.status) + '</span>';
+}
+
+function openNew() {
+  editForm({ year: B.currentYear, project: $('fProject').value || '', vendor: '', checks: {}, frequency: 'Monthly', month: String(new Date().getMonth() + 1) }, null);
+}
+
+function openRequest(id) {
+  call('requestDetail', { id: id }).then(function (D) {
+    if (D.actions.indexOf('edit') >= 0) return editForm(D.request, D);
+    viewRequest(D);
+  }).catch(function (e) { alert(e.message); });
+}
+
+/* ---------- edit / submit form ---------- */
+function editForm(r, D) {
+  var isNew = !r.id;
+  var body =
+    '<div id="eErr" class="err hidden"></div>' +
+    (r.status === B.statuses.RETURNED && r.lastRemark ? '<div class="err"><b>Returned:</b> ' + esc(r.lastRemark) + '</div>' : '') +
+    '<section class="box"><h3>Invoice</h3><div class="form">' +
+    '<label>Project<select id="eProject">' + opts(B.projects, r.project, 'Choose…') + '</select></label>' +
+    '<label>Budget year<select id="eYear">' + opts(years(), r.year) + '</select></label>' +
+    '<label class="full">Vendor<div class="row"><select id="eVendor"></select><button type="button" onclick="addVendorPrompt()">+ Add vendor</button></div></label>' +
+    '<label class="full">Budget code<select id="eLine"></select></label>' +
+    '<div class="full budget" id="eBudget"></div>' +
+    '<label>Invoice no.<input id="eInv" value="' + esc(r.invoiceNo || '') + '" placeholder="Paste invoice number"></label>' +
+    '<label>Frequency<select id="eFreq">' + opts(B.frequencies, r.frequency) + '</select></label>' +
+    '<label>Invoice month<select id="eMonth">' + opts(B.months.map(function (m, i) { return { v: String(i + 1), l: m }; }), r.month) + '</select></label>' +
+    '<label class="muted" id="eMonthHint" style="align-self:end"></label>' +
+    '<label>Amount before VAT (AED)<input id="eNet" type="number" step="0.01" min="0" value="' + (Number(r.net) || '') + '"></label>' +
+    '<label>VAT (AED) <input id="eVat" type="number" step="0.01" min="0" value="' + (Number(r.vat) || '') + '"></label>' +
+    '<label class="full">Total (AED)<input id="eTotal" disabled></label>' +
+    '<label class="full hidden" id="eOverWrap">Over budget — reason (required to submit)<textarea id="eOver">' + esc(r.overBudgetReason || '') + '</textarea></label>' +
+    '</div></section>' +
+    '<section class="box"><h3>Invoice pack (PDF)</h3>' +
+    (r.invoiceFileUrl ? '<p>Attached: <a href="' + esc(r.invoiceFileUrl) + '" target="_blank">open current file</a>. Choose a new file only to replace it.</p>' : '') +
+    '<input type="file" id="eFile" accept="application/pdf,image/*"></section>' +
+    '<section class="box checks"><h3>Checks — all must be ticked to submit</h3>' +
+    B.checks.map(function (c) { return '<label><input type="checkbox" data-chk="' + c.key + '"' + (r.checks && r.checks[c.key] ? ' checked' : '') + '> ' + esc(c.label) + '</label>'; }).join('') +
+    '</section>' +
+    '<div class="actions"><button class="primary" id="eSubmit">' + (r.status === B.statuses.RETURNED ? 'Resubmit' : 'Submit for review') + '</button>' +
+    '<button id="eSave">' + (isNew ? 'Save as To Collect' : 'Save') + '</button></div>';
+  if (D) body += followUpSection(D) + timelineSection(D) + actionSection(D, ['cancel']);
+  openDrawer(isNew ? 'New payment request' : r.id, isNew ? '' : statusPill(r), body);
+  if (D) wireActions(D);
+
+  var lines = [];
+  function refreshVendors() {
+    call('vendors', { project: $('eProject').value }).then(function (v) {
+      var all = B.vendors.slice(); v.forEach(function (x) { if (all.indexOf(x) < 0) all.push(x); });
+      if (r.vendor && all.indexOf(r.vendor) < 0) all.push(r.vendor);
+      var projectVendors = v.concat(all.filter(function (x) { return v.indexOf(x) < 0; }));
+      $('eVendor').innerHTML = opts(projectVendors, $('eVendor').value || r.vendor, 'Choose vendor…');
+    });
+  }
+  function refreshLines() {
+    var p = $('eProject').value, y = $('eYear').value;
+    if (!p) { $('eLine').innerHTML = '<option value="">Choose a project first</option>'; showBudget(); return; }
+    call('budgetLines', { project: p, year: y }).then(function (ls) {
+      lines = ls;
+      $('eLine').innerHTML = ls.length ? opts(ls.map(function (l) { return { v: l.key, l: l.label }; }), r.lineKey, 'Choose budget code…')
+        : '<option value="">No ' + y + ' budget uploaded for ' + esc(p) + '</option>';
+      showBudget();
+    });
+  }
+  function currentLine() { var k = $('eLine').value; return lines.filter(function (l) { return l.key === k; })[0]; }
+  function showBudget() {
+    var l = currentLine();
+    var total = Math.round(((Number($('eNet').value) || 0) + (Number($('eVat').value) || 0)) * 100) / 100;
+    $('eTotal').value = aed(total);
+    if (!l) { $('eBudget').innerHTML = ''; $('eOverWrap').classList.add('hidden'); return; }
+    var used = l.committed - (r.lineKey === l.key && [B.statuses.TO_COLLECT, B.statuses.CANCELLED].indexOf(r.status) < 0 ? Number(r.total) || 0 : 0);
+    var bal = l.amount - used, after = bal - total;
+    $('eBudget').innerHTML = '<div><small>Total budget</small><b>' + aed(l.amount) + '</b></div><div><small>Used so far (' + l.invoices + ' inv.)</small><b>' + aed(used) + '</b></div>' +
+      '<div><small>Balance now</small><b>' + aed(bal) + '</b></div><div><small>After this invoice</small><b class="' + (after < 0 ? 'neg' : '') + '">' + aed(after) + '</b></div>';
+    $('eOverWrap').classList.toggle('hidden', !(after < -0.004));
+    if (!r.vendor && !$('eVendor').value && l.vendors[0]) {
+      var o = Array.prototype.filter.call($('eVendor').options, function (x) { return x.value === l.vendors[0]; })[0];
+      if (o) $('eVendor').value = l.vendors[0];
+    }
+    if (isNew && l.frequency && !$('eFreq')._touched) { $('eFreq').value = l.frequency; monthHint(); }
+  }
+  function monthHint() {
+    var f = $('eFreq').value;
+    $('eMonthHint').textContent = f === 'Annual' ? 'Annual invoices: choose December' : f === 'Quarterly' ? 'Quarterly: choose the quarter-end month (Mar/Jun/Sep/Dec) or the month received' : f === 'Half-yearly' ? 'Half-yearly: choose Jun or Dec' : '';
+    if (f === 'Annual' && isNew) $('eMonth').value = '12';
+  }
+  $('eProject').onchange = function () { refreshVendors(); refreshLines(); };
+  $('eYear').onchange = refreshLines;
+  $('eLine').onchange = showBudget;
+  $('eFreq').onchange = function () { $('eFreq')._touched = true; monthHint(); };
+  $('eNet').oninput = function () { if (!$('eVat')._touched) $('eVat').value = (Math.round((Number($('eNet').value) || 0) * 5) / 100).toFixed(2); showBudget(); };
+  $('eVat').oninput = function () { $('eVat')._touched = true; showBudget(); };
+  if (r.vat) $('eVat')._touched = true;
+  refreshVendors(); refreshLines(); monthHint();
+
+  function gather() {
+    var checks = {};
+    document.querySelectorAll('[data-chk]').forEach(function (c) { checks[c.dataset.chk] = c.checked; });
+    return readFile($('eFile')).then(function (file) {
+      return { id: r.id, project: $('eProject').value, year: $('eYear').value, vendor: $('eVendor').value, lineKey: $('eLine').value,
+        invoiceNo: $('eInv').value, frequency: $('eFreq').value, month: $('eMonth').value, net: $('eNet').value, vat: $('eVat').value,
+        overBudgetReason: $('eOver').value, checks: checks, file: file };
+    });
+  }
+  function save(submit) {
+    $('eErr').classList.add('hidden');
+    gather().then(function (data) { return call('saveRequest', { data: data, submit: submit }); }).then(function (id) {
+      toast(submit ? id + ' submitted' : id + ' saved'); closeDrawer(); loadRequests();
+    }).catch(function (e) {
+      var m = e.message.match(/^OVER_BUDGET:(.*)$/);
+      if (m) { $('eOverWrap').classList.remove('hidden'); $('eOver').focus(); e = new Error('This invoice is over the remaining budget (balance AED ' + aed(m[1]) + '). Write the reason to submit it anyway.'); }
+      showErr($('eErr'), e);
+    });
+  }
+  $('eSubmit').onclick = function () { save(true); };
+  $('eSave').onclick = function () { save(false); };
+}
+
+function addVendorPrompt() {
+  var n = prompt('New vendor name');
+  if (!n) return;
+  call('addVendor', { name: n }).then(function (list) {
+    B.vendors = list;
+    var sel = $('eVendor');
+    if (!Array.prototype.some.call(sel.options, function (o) { return o.value === n.trim(); })) sel.insertAdjacentHTML('beforeend', '<option>' + esc(n.trim()) + '</option>');
+    sel.value = n.trim();
+    $('fVendor').innerHTML = opts(list, $('fVendor').value, 'All vendors');
+    toast('Vendor added');
+  }).catch(function (e) { alert(e.message); });
+}
+
+/* ---------- read-only view + actions ---------- */
+function viewRequest(D) {
+  var r = D.request, S = B.statuses;
+  var l = D.line;
+  var body =
+    (r.status === S.RETURNED && r.lastRemark ? '<div class="err"><b>Returned:</b> ' + esc(r.lastRemark) + '</div>' : '') +
+    actionSection(D) +
+    '<section class="box"><h3>Invoice</h3><div class="kv">' +
+    '<div>Project</div><div>' + esc(r.project) + '</div>' +
+    '<div>Vendor</div><div>' + esc(r.vendor) + '</div>' +
+    '<div>Invoice no.</div><div><b>' + esc(r.invoiceNo || '—') + '</b></div>' +
+    '<div>Budget code</div><div>' + esc(r.lineLabel) + '</div>' +
+    '<div>Period</div><div>' + esc((B.months[Number(r.month) - 1] || '') + ' ' + r.year + ' · ' + (r.frequency || '')) + '</div>' +
+    '<div>Amount</div><div>AED ' + aed(r.net) + ' + VAT ' + aed(r.vat) + ' = <b>AED ' + aed(r.total) + '</b></div>' +
+    (r.overBudgetReason ? '<div>Over-budget reason</div><div class="neg">' + esc(r.overBudgetReason) + '</div>' : '') +
+    (r.bankRef ? '<div>Bank reference</div><div>' + esc(r.bankRef) + '</div>' : '') +
+    (r.paidDate ? '<div>Paid on</div><div>' + d(r.paidDate) + '</div>' : '') +
+    '<div>Documents</div><div>' +
+    (r.invoiceFileUrl ? '<a href="' + esc(r.invoiceFileUrl) + '" target="_blank">Invoice pack</a>' : '<span class="muted">No invoice yet</span>') +
+    (r.proofFileUrl ? ' · <a href="' + esc(r.proofFileUrl) + '" target="_blank">Payment proof</a>' : '') +
+    (r.folderUrl ? ' · <a href="' + esc(r.folderUrl) + '" target="_blank">Drive folder</a>' : '') + '</div>' +
+    '</div></section>' +
+    (l ? '<section class="box"><h3>Budget</h3><div class="budget">' +
+      '<div><small>Total budget</small><b>' + aed(l.amount) + '</b></div>' +
+      '<div><small>Used by other invoices</small><b>' + aed(D.usage.committed) + '</b></div>' +
+      '<div><small>Balance before this</small><b>' + aed(D.balanceBefore) + '</b></div>' +
+      '<div><small>Balance after this</small><b class="' + (D.balanceBefore - r.total < 0 ? 'neg' : '') + '">' + aed(D.balanceBefore - r.total) + '</b></div></div></section>' : '') +
+    '<section class="box checks"><h3>Checks</h3>' + B.checks.map(function (c) {
+      return '<label><input type="checkbox" disabled' + (r.checks[c.key] ? ' checked' : '') + '> ' + esc(c.label) + '</label>'; }).join('') + '</section>' +
+    followUpSection(D) + timelineSection(D);
+  openDrawer(r.id, statusPill(r), body);
+  wireActions(D);
+}
+
+function actionSection(D, only) {
+  var a = D.actions.filter(function (x) { return !only || only.indexOf(x) >= 0; });
+  var r = D.request, S = B.statuses, h = '';
+  if (a.indexOf('approve') >= 0) {
+    var what = r.status === S.PENDING_REVIEW ? 'Review' : r.status === S.PENDING_MGR ? 'Manager approval' : 'Approve on bank portal';
+    var tip = r.status === S.PENDING_BANK_APPROVAL ? 'Approve the payment on the bank portal first, then approve it here.' : 'Open the invoice pack, check it, then approve or reject.';
+    h += '<section class="box"><h3>' + what + '</h3><p class="muted" style="margin-top:0">' + tip + '</p>' +
+      '<textarea id="aRemark" placeholder="Remark (required to reject, optional to approve)"></textarea>' +
+      '<div class="actions"><button class="primary" id="aApprove">Approve</button><button class="danger" id="aReject">Reject &amp; return</button></div><div id="aErr" class="err hidden" style="margin-top:8px"></div></section>';
+  }
+  if (a.indexOf('bankInitiated') >= 0)
+    h += '<section class="box"><h3>Initiate payment in the bank</h3><div class="form"><label class="full">Bank reference (optional)<input id="aRef"></label></div>' +
+      '<div class="actions"><button class="primary" id="aBank">Payment initiated in bank</button></div><div id="aErr" class="err hidden" style="margin-top:8px"></div></section>';
+  if (a.indexOf('markPaid') >= 0)
+    h += '<section class="box"><h3>Payment cleared by bank</h3><div class="form"><label>Payment date<input id="aPaid" type="date" value="' + today() + '"></label>' +
+      '<label>Bank payment proof<input id="aProof" type="file" accept="application/pdf,image/*"></label></div>' +
+      '<div class="actions"><button class="primary" id="aMarkPaid">Mark as paid</button></div><div id="aErr" class="err hidden" style="margin-top:8px"></div></section>';
+  if (a.indexOf('nobroker') >= 0)
+    h += '<section class="box"><h3>Update NoBroker</h3><p class="muted" style="margin-top:0">Record the payment in NoBroker, then confirm here to close the request.</p>' +
+      '<div class="actions"><button class="primary" id="aNob">Updated in NoBroker — close</button></div><div id="aErr" class="err hidden" style="margin-top:8px"></div></section>';
+  if (a.indexOf('cancel') >= 0)
+    h += '<details class="box" style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px"><summary>Cancel this request</summary>' +
+      '<textarea id="cRemark" placeholder="Reason" style="margin-top:8px"></textarea><div class="actions"><button class="danger" id="aCancel">Cancel request</button></div></details>';
+  return h;
+}
+
+function wireActions(D) {
+  var id = D.request.id;
+  function run(p) { p.then(function () { toast('Done'); closeDrawer(); loadRequests(); }).catch(function (e) { var el = $('aErr'); if (el) showErr(el, e); else alert(e.message); }); }
+  if ($('aApprove')) $('aApprove').onclick = function () { run(call('approve', { id: id, remark: $('aRemark').value })); };
+  if ($('aReject')) $('aReject').onclick = function () { run(call('reject', { id: id, remark: $('aRemark').value })); };
+  if ($('aBank')) $('aBank').onclick = function () { run(call('bankInitiated', { id: id, bankRef: $('aRef').value })); };
+  if ($('aMarkPaid')) $('aMarkPaid').onclick = function () { run(readFile($('aProof')).then(function (f) { return call('markPaid', { id: id, paidDate: $('aPaid').value, file: f }); })); };
+  if ($('aNob')) $('aNob').onclick = function () { run(call('nobroker', { id: id })); };
+  if ($('aCancel')) $('aCancel').onclick = function () { if (confirm('Cancel ' + id + '?')) run(call('cancel', { id: id, remark: $('cRemark').value })); };
+  if ($('fuAdd')) $('fuAdd').onclick = function () {
+    readFile($('fuFile')).then(function (f) {
+      return call('addFollowUp', { id: id, data: { type: $('fuType').value, date: $('fuDate').value, remark: $('fuRemark').value, file: f } });
+    }).then(function () { toast('Follow-up added'); openRequest(id); loadRequests(); })
+      .catch(function (e) { showErr($('fuErr'), e); });
+  };
+}
+
+function followUpSection(D) {
+  var list = D.followUps.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+  var can = D.actions.indexOf('followUp') >= 0;
+  return '<section class="box"><h3>Follow-ups (' + list.length + ')</h3>' +
+    (list.length ? '<ul class="tl">' + list.map(function (f) {
+      return '<li><div><b>' + esc(f.type) + '</b> — ' + esc(f.remark) + '</div><div class="muted">' + d(f.date) + '</div>' +
+        '<div class="meta">by ' + esc(f.userName || f.user) + (f.fileUrl ? ' · <a href="' + esc(f.fileUrl) + '" target="_blank">attachment</a>' : '') + '</div></li>';
+    }).join('') + '</ul>' : '<p class="muted" style="margin-top:0">No reminders or notes yet.</p>') +
+    (can ? '<div id="fuErr" class="err hidden"></div><div class="form" style="margin-top:8px">' +
+      '<label>Type<select id="fuType">' + opts(B.followUpTypes, 'Reminder sent') + '</select></label>' +
+      '<label>Date<input id="fuDate" type="date" value="' + today() + '"></label>' +
+      '<label class="full">Note<input id="fuRemark" placeholder="e.g. Emailed vendor for Q4 invoice, asked by 25 Nov"></label>' +
+      '<label class="full">Email screenshot / attachment<input id="fuFile" type="file" accept="image/*,application/pdf,.eml,.msg"></label>' +
+      '</div><div class="actions"><button id="fuAdd">Add follow-up</button></div>' : '') + '</section>';
+}
+
+function timelineSection(D) {
+  return '<section class="box"><h3>Log — days in each stage</h3><ul class="tl">' + D.timeline.map(function (t) {
+    return '<li><div>' + esc(t.status) + (t.open ? ' <span class="pill">now</span>' : '') + '</div><div class="num"><b>' + t.days + '</b> days</div>' +
+      '<div class="meta">' + dt(t.start) + (t.exitedBy ? ' → ' + esc(t.exitAction) + ' by ' + esc(t.exitedBy) + ' on ' + dt(t.end) : '') + '</div></li>';
+  }).join('') + '</ul>' +
+    '<details style="margin-top:8px"><summary class="muted">Full activity log</summary><ul class="tl">' + D.log.map(function (e) {
+      return '<li><div><b>' + esc(e.action) + '</b>' + (e.remark ? ' — ' + esc(e.remark) : '') + '</div><div class="muted">' + dt(e.ts) + '</div><div class="meta">' + esc(e.userName || e.user) + (e.toStatus ? ' · ' + esc(e.fromStatus || 'new') + ' → ' + esc(e.toStatus) : '') + '</div></li>';
+    }).join('') + '</ul></details></section>';
+}
+
+/* ============================================================ schedules */
+$('sYear').onchange = renderSchedules; $('sProject').onchange = renderSchedules;
+function loadSchedules() { return call('listSchedules').then(function (s) { SCHEDS = s; renderSchedules(); }); }
+function renderSchedules() {
+  var y = $('sYear').value, p = $('sProject').value;
+  var rows = SCHEDS.filter(function (s) { return (!y || String(s.year) === y) && (!p || s.project === p); });
+  $('schedBody').innerHTML = rows.length ? rows.map(function (s) {
+    return '<tr data-id="' + esc(s.id) + '"><td>' + esc(s.id) + '</td><td>' + esc(s.project) + '</td><td class="wrap">' + esc(s.lineLabel) + '</td><td>' + esc(s.vendor) + '</td><td>' + esc(s.frequency) + '</td><td>' + esc(B.months[Number(s.startMonth) - 1] || '') + '</td><td>' + (s.active === 'FALSE' ? '<span class="muted">Off</span>' : 'On') + '</td></tr>';
+  }).join('') : '<tr><td colspan="7" class="empty">No schedules yet. Add one, or (managers) create them from the uploaded budget.</td></tr>';
+  document.querySelectorAll('#schedBody tr[data-id]').forEach(function (tr) {
+    tr.onclick = function () { openSchedule(SCHEDS.filter(function (s) { return s.id === tr.dataset.id; })[0]); };
+  });
+}
+function openSchedule(s) {
+  s = s || { year: $('sYear').value, project: $('sProject').value || '', frequency: 'Quarterly', startMonth: '1', active: 'TRUE' };
+  openDrawer(s.id ? 'Schedule ' + s.id : 'New collection schedule', '',
+    '<div id="scErr" class="err hidden"></div><div class="form">' +
+    '<label>Project<select id="scProject">' + opts(B.projects, s.project, 'Choose…') + '</select></label>' +
+    '<label>Budget year<select id="scYear">' + opts(years(), s.year) + '</select></label>' +
+    '<label class="full">Budget code<select id="scLine"></select></label>' +
+    '<label class="full">Vendor<select id="scVendor">' + opts(B.vendors.concat(s.vendor && B.vendors.indexOf(s.vendor) < 0 ? [s.vendor] : []), s.vendor, 'Choose vendor…') + '</select></label>' +
+    '<label>Frequency<select id="scFreq">' + opts(B.frequencies, s.frequency) + '</select></label>' +
+    '<label>Start from month<select id="scStart">' + opts(B.months.map(function (m, i) { return { v: String(i + 1), l: m }; }), s.startMonth) + '</select></label>' +
+    '<label><span><input type="checkbox" id="scActive"' + (s.active !== 'FALSE' ? ' checked' : '') + '> Active</span></label>' +
+    '</div><div class="actions"><button class="primary" id="scSave">Save schedule</button></div>');
+  function lines() {
+    if (!$('scProject').value) { $('scLine').innerHTML = '<option value="">Choose a project first</option>'; return; }
+    call('budgetLines', { project: $('scProject').value, year: $('scYear').value }).then(function (ls) {
+      $('scLine').innerHTML = opts(ls.map(function (l) { return { v: l.key, l: l.label }; }), s.lineKey, ls.length ? 'Choose…' : 'No budget uploaded');
+      $('scLine').onchange = function () { var l = ls.filter(function (x) { return x.key === $('scLine').value; })[0]; if (l && l.vendors[0] && !$('scVendor').value) $('scVendor').value = l.vendors[0]; };
+    });
+  }
+  $('scProject').onchange = lines; $('scYear').onchange = lines; lines();
+  $('scSave').onclick = function () {
+    call('saveSchedule', { schedule: { id: s.id, project: $('scProject').value, year: $('scYear').value, lineKey: $('scLine').value, vendor: $('scVendor').value,
+      frequency: $('scFreq').value, startMonth: $('scStart').value, active: $('scActive').checked } })
+      .then(function () { toast('Schedule saved'); closeDrawer(); loadSchedules(); }).catch(function (e) { showErr($('scErr'), e); });
+  };
+}
+function schedFromBudget() {
+  var y = $('sYear').value, p = $('sProject').value;
+  if (!confirm('Create a collection schedule for every ' + y + ' budget code' + (p ? ' of ' + p : ' in all projects') + ' that has none yet?\n\nDefaults: master community quarterly, DCD and RERA fee annual, pest control and waste monthly, water tank and facade cleaning half-yearly, everything else quarterly. You can change each one afterwards.')) return;
+  call('schedulesFromBudget', { year: y, project: p }).then(function (n) { toast(n + ' schedules created'); loadSchedules(); }).catch(function (e) { alert(e.message); });
+}
+function runDue() {
+  call('generateDue').then(function (ids) { toast(ids.length ? ids.length + ' To Collect lines created' : 'Nothing new is due'); loadRequests(); }).catch(function (e) { alert(e.message); });
+}
+
+/* ============================================================ budget */
+$('bYear').onchange = loadBudget; $('bProject').onchange = loadBudget;
+function loadBudget() {
+  return call('budgetLines', { year: $('bYear').value, project: $('bProject').value }).then(function (ls) {
+    var t = { a: 0, c: 0, p: 0 };
+    $('budBody').innerHTML = ls.length ? ls.map(function (l) {
+      t.a += l.amount; t.c += l.committed; t.p += l.paid;
+      var pct = l.amount ? Math.round(l.committed / l.amount * 100) : 0;
+      return '<tr><td>' + esc(l.group ? l.group + ' — ' + l.codes.join(', ') : l.codes[0]) + '</td><td class="wrap">' + esc(l.descriptions.join('; ')) + '</td><td>' + esc(l.vendors.join(', ')) + '</td><td>' + esc(l.frequency) + '</td>' +
+        '<td class="num">' + aed(l.amount) + '</td><td class="num">' + aed(l.committed) + '</td><td class="num">' + aed(l.paid) + '</td><td class="num' + (l.balance < 0 ? ' neg' : '') + '">' + aed(l.balance) + '</td>' +
+        '<td><div class="bar"><i class="' + (pct > 100 ? 'over' : '') + '" style="width:' + Math.min(pct, 100) + '%"></i></div><span class="muted">' + pct + '%</span></td><td class="num">' + l.invoices + '</td></tr>';
+    }).join('') : '<tr><td colspan="10" class="empty">No ' + esc($('bYear').value) + ' budget for ' + esc($('bProject').value) + ' yet.' + (isMgr() ? ' Use “Upload budget Excel”.' : '') + '</td></tr>';
+    $('budFoot').innerHTML = ls.length ? '<tr><th colspan="4">Total</th><th class="num">' + aed(t.a) + '</th><th class="num">' + aed(t.c) + '</th><th class="num">' + aed(t.p) + '</th><th class="num">' + aed(t.a - t.c) + '</th><th colspan="2"></th></tr>' : '';
+  });
+}
+
+var UPLOAD_ROWS = null;
+function openUpload() {
+  UPLOAD_ROWS = null;
+  openDrawer('Upload budget', '',
+    '<div id="uErr" class="err hidden"></div>' +
+    '<p>Upload one project’s budget as Excel (.xlsx) or CSV. The first row must be headings. Columns:</p>' +
+    '<table style="margin-bottom:12px"><tbody>' +
+    '<tr><td><b>Code</b></td><td class="wrap">Budget / Mollak code (required)</td></tr>' +
+    '<tr><td><b>Description</b></td><td class="wrap">e.g. Pest control</td></tr>' +
+    '<tr><td><b>Amount</b></td><td class="wrap">Annual budget in AED (required)</td></tr>' +
+    '<tr><td><b>Vendor</b></td><td class="wrap">Optional — fills the vendor list</td></tr>' +
+    '<tr><td><b>Group</b></td><td class="wrap">Optional — rows with the same group are tracked and paid as one line, e.g. “Cleaning &amp; Maintenance”</td></tr>' +
+    '<tr><td><b>Frequency</b></td><td class="wrap">Optional — Monthly, Quarterly, Half-yearly or Annual</td></tr>' +
+    '</tbody></table>' +
+    '<p><a href="#" id="uTpl">Download a blank template (CSV)</a></p>' +
+    '<div class="form"><label>Project<select id="uProject">' + opts(B.projects, $('bProject').value) + '</select></label>' +
+    '<label>Budget year<select id="uYear">' + opts(years(), $('bYear').value) + '</select></label>' +
+    '<label class="full">File<input type="file" id="uFile" accept=".xlsx,.xls,.csv"></label></div>' +
+    '<div id="uPrev"></div>' +
+    '<div class="actions"><button class="primary" id="uGo" disabled>Replace budget with this file</button></div>');
+  $('uTpl').onclick = function (e) {
+    e.preventDefault();
+    var csv = 'Code,Description,Amount,Vendor,Group,Frequency\n' +
+      '0101,Cleaning services,120000,Kawthar Al Khair,Cleaning & Maintenance,Monthly\n' +
+      '0201,MEP maintenance,95000,IMB Technical Services,Cleaning & Maintenance,Monthly\n' +
+      '0301,Pest control,6000,,,Monthly\n';
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'budget-template.csv'; a.click();
+  };
+  $('uFile').onchange = function () {
+    $('uErr').classList.add('hidden');
+    var f = $('uFile').files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var wb = XLSX.read(new Uint8Array(rd.result), { type: 'array' });
+        var raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        UPLOAD_ROWS = mapBudgetRows(raw);
+        var total = UPLOAD_ROWS.reduce(function (s, r) { return s + (Number(String(r.amount).replace(/,/g, '')) || 0); }, 0);
+        $('uPrev').innerHTML = '<section class="box"><h3>Preview — ' + UPLOAD_ROWS.length + ' rows · AED ' + aed(total) + '</h3><div class="gridwrap" style="max-height:260px"><table><thead><tr><th>Code</th><th>Description</th><th class="num">Amount</th><th>Vendor</th><th>Group</th><th>Freq.</th></tr></thead><tbody>' +
+          UPLOAD_ROWS.slice(0, 200).map(function (r) { return '<tr><td>' + esc(r.code) + '</td><td>' + esc(r.description) + '</td><td class="num">' + aed(String(r.amount).replace(/,/g, '')) + '</td><td>' + esc(r.vendor) + '</td><td>' + esc(r.group) + '</td><td>' + esc(r.frequency) + '</td></tr>'; }).join('') +
+          '</tbody></table></div></section>';
+        $('uGo').disabled = !UPLOAD_ROWS.length;
+      } catch (e) { showErr($('uErr'), e); }
+    };
+    rd.readAsArrayBuffer(f);
+  };
+  $('uGo').onclick = function () {
+    if (!confirm('This replaces the whole ' + $('uYear').value + ' budget of ' + $('uProject').value + '. Invoices already entered stay linked by code. Continue?')) return;
+    call('uploadBudget', { year: $('uYear').value, project: $('uProject').value, rows: UPLOAD_ROWS }).then(function (r) {
+      toast(r.rows + ' budget rows uploaded'); closeDrawer();
+      $('bProject').value = $('uProject').value; $('bYear').value = $('uYear').value; loadBudget();
+      call('vendors').then(function (v) { B.vendors = v; $('fVendor').innerHTML = opts(v, '', 'All vendors'); });
+    }).catch(function (e) { showErr($('uErr'), e); });
+  };
+}
+function mapBudgetRows(raw) {
+  if (!raw.length) throw new Error('The file is empty.');
+  var keys = Object.keys(raw[0]);
+  function find(re) { return keys.filter(function (k) { return re.test(k.trim()); })[0]; }
+  var kCode = find(/^(budget\s*)?(mollak\s*|service\s*)?code$/i) || find(/code/i);
+  var kAmt = find(/^(budget\s*)?amount|^budget$|^total|aed/i);
+  var kDesc = find(/desc|item|name|particular|service(?!\s*code)/i);
+  if (!kCode || !kAmt) throw new Error('Could not find the "Code" and "Amount" columns. Headings found: ' + keys.join(', '));
+  var kVen = find(/vendor|supplier|contractor/i), kGrp = find(/group|combine/i), kFrq = find(/freq/i);
+  return raw.map(function (r) {
+    var f = String(kFrq ? r[kFrq] : '').trim();
+    var fl = f.toLowerCase();
+    f = /month/.test(fl) ? 'Monthly' : /quarter/.test(fl) ? 'Quarterly' : /half|semi|6/.test(fl) ? 'Half-yearly' : /annual|year/.test(fl) ? 'Annual' : '';
+    return { code: String(r[kCode]).trim(), description: kDesc ? String(r[kDesc]).trim() : '', amount: r[kAmt],
+      vendor: kVen ? String(r[kVen]).trim() : '', group: kGrp ? String(r[kGrp]).trim() : '', frequency: f };
+  }).filter(function (r) { return r.code && !/^total/i.test(r.code); });
+}
+
+/* ============================================================ reports */
+function loadReports() {
+  return call('report').then(function (r) {
+    $('repPeople').innerHTML = r.people.length ? r.people.map(function (p) {
+      return '<tr><td>' + esc(p.person) + '</td><td class="num">' + p.steps + '</td><td class="num">' + p.avgDays + '</td><td class="num">' + p.maxDays + '</td><td class="num">' + p.rejections + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="empty">No activity yet.</td></tr>';
+    var order = Object.keys(B.statuses).map(function (k) { return B.statuses[k]; });
+    r.stages.sort(function (a, b) { return order.indexOf(a.status) - order.indexOf(b.status); });
+    $('repStages').innerHTML = r.stages.filter(function (s) { return s.status !== B.statuses.CLOSED && s.status !== B.statuses.CANCELLED; }).map(function (s) {
+      return '<tr><td>' + esc(s.status) + '</td><td class="num">' + s.done + '</td><td class="num">' + s.avgDays + '</td><td class="num">' + s.open + '</td><td class="num' + (s.openDays >= 5 ? ' warn' : '') + '">' + (s.open ? s.openDays : '') + '</td></tr>';
+    }).join('');
+  });
+}
+
+/* ============================================================ password */
+function openPassword() {
+  openDrawer('Change password', '', '<div id="pErr" class="err hidden"></div><div class="form">' +
+    '<label class="full">Current password<input id="pOld" type="password"></label>' +
+    '<label class="full">New password (6+ characters)<input id="pNew" type="password"></label></div>' +
+    '<div class="actions"><button class="primary" id="pGo">Change password</button></div>');
+  $('pGo').onclick = function () {
+    call('changePassword', { oldPw: $('pOld').value, newPw: $('pNew').value }).then(function () { toast('Password changed'); closeDrawer(); })
+      .catch(function (e) { showErr($('pErr'), e); });
+  };
+}
+
+if (TOKEN) start(); else showLogin();
+</script>
+</body>
+</html>
